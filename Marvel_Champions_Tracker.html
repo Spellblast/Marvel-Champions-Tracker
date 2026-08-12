@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Marvel Champions Progression Tracker</title>
+<style>
+:root{
+  --red:#ac1e2b; --red-dark:#7c1420; --black:#14151a; --panel:#1d1f27; --panel2:#252732;
+  --border:#33364066; --text:#eef0f5; --muted:#9ba0b0; --green:#2f9e57; --amber:#c99a2e;
+  --blue:#3a6fb0; --gray:#3a3d48;
+  --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--black);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+body{padding-top:var(--safe-top);padding-bottom:var(--safe-bottom);}
+h1,h2,h3,h4{margin:0 0 6px 0;font-weight:700;}
+p{margin:0 0 8px 0;line-height:1.4;color:var(--text);}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::-webkit-scrollbar{height:8px;width:8px;}
+::-webkit-scrollbar-thumb{background:#444;border-radius:4px;}
+
+/* Header */
+header.topbar{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,var(--red-dark),var(--red));padding:10px 14px;box-shadow:0 2px 8px #0007;}
+header.topbar h1{font-size:16px;letter-spacing:.5px;text-transform:uppercase;color:#fff;}
+header.topbar .sub{font-size:11px;color:#ffd9dd;}
+
+nav.tabs{position:sticky;top:0;z-index:49;display:flex;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto;}
+nav.tabs button{flex:1 0 auto;min-width:76px;background:none;border:none;color:var(--muted);padding:10px 8px;font-size:12px;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;}
+nav.tabs button.active{color:#fff;border-bottom-color:var(--red);}
+
+main{padding:12px;max-width:1200px;margin:0 auto;padding-bottom:60px;}
+.view{display:none;}
+.view.active{display:block;}
+
+/* Cards */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.card h2{font-size:15px;color:#fff;}
+.card h3{font-size:13px;color:#fff;}
+.muted{color:var(--muted);font-size:12px;}
+
+/* Dashboard */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px;}
+.stat{background:var(--panel2);border-radius:10px;padding:12px;text-align:center;}
+.stat .num{font-size:24px;font-weight:800;color:#fff;}
+.stat .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+.progress-bar{height:8px;background:#33354022;background:#33354055;border-radius:4px;overflow:hidden;margin-top:8px;}
+.progress-bar>div{height:100%;background:linear-gradient(90deg,var(--red),#e84a58);}
+.big-btn{display:block;width:100%;background:var(--red);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;margin-top:6px;}
+.big-btn:active{background:var(--red-dark);}
+.btn2{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;}
+
+/* Phase accordion */
+.phase-item{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+.phase-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;}
+.phase-num{width:30px;height:30px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:0 0 auto;}
+.phase-num.done{background:var(--green);color:#fff;}
+.phase-num.partial{background:var(--amber);color:#101010;}
+.phase-headtext{flex:1;min-width:0;}
+.phase-headtext .t{font-size:14px;font-weight:700;color:#fff;}
+.phase-headtext .d{font-size:11px;color:var(--muted);}
+.chev{color:var(--muted);font-size:12px;transition:transform .15s;}
+.phase-item.open .chev{transform:rotate(90deg);}
+.phase-body{display:none;padding:0 14px 14px 14px;border-top:1px solid var(--border);}
+.phase-item.open .phase-body{display:block;padding-top:12px;}
+.phase-blurb{font-size:12.5px;color:var(--muted);margin-bottom:10px;}
+.steps{margin:0 0 12px 0;padding-left:18px;font-size:12.5px;color:var(--text);}
+.steps li{margin-bottom:5px;}
+
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.hero-card{background:var(--panel2);border-radius:10px;padding:10px;flex:1 1 220px;min-width:200px;}
+.hero-card .name{font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;}
+.step-toggles{display:flex;gap:6px;flex-wrap:wrap;}
+.step-toggle{flex:1 1 auto;font-size:10px;text-align:center;padding:6px 4px;border-radius:6px;background:#00000033;border:1px solid var(--border);color:var(--muted);font-weight:700;min-width:60px;}
+.step-toggle.on{background:var(--green);color:#fff;border-color:var(--green);}
+
+.scenario-chip{background:var(--panel2);border-radius:8px;padding:8px 10px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:1px solid var(--border);}
+.scenario-chip.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.scenario-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+.scenario-chip.on .dot{background:#fff;}
+
+.campaign-box{background:#00000030;border:1px dashed var(--border);border-radius:10px;padding:10px;margin-bottom:10px;}
+.campaign-box .cname{font-size:12px;font-weight:700;color:var(--amber);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;}
+.order-list{list-style:none;margin:0;padding:0;font-size:12.5px;}
+.order-list li{padding:4px 0;color:var(--text);display:flex;gap:8px;align-items:center;}
+.order-list .n{color:var(--muted);width:16px;flex:0 0 auto;}
+.sandbox-order input{width:44px;background:#00000040;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px;text-align:center;}
+.campaign-complete-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px;}
+.campaign-complete-row input{width:18px;height:18px;}
+
+/* Matrix */
+.matrix-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center;}
+.matrix-controls input[type=text]{flex:1 1 140px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;}
+.toggle-pill{background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:6px 12px;font-size:11.5px;font-weight:600;}
+.toggle-pill.on{background:var(--red);color:#fff;border-color:var(--red);}
+.legend{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-bottom:8px;flex-wrap:wrap;}
+.legend span{display:inline-flex;align-items:center;gap:4px;}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block;}
+.matrix-wrap{overflow:auto;max-height:70vh;border:1px solid var(--border);border-radius:10px;-webkit-overflow-scrolling:touch;}
+table.matrix{border-collapse:separate;border-spacing:0;font-size:11px;}
+table.matrix th,table.matrix td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:0;text-align:center;}
+table.matrix thead th{position:sticky;top:0;background:var(--panel2);z-index:5;padding:6px 4px;font-size:10px;font-weight:700;color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);height:110px;min-width:30px;max-width:30px;white-space:nowrap;}
+table.matrix thead th.corner{position:sticky;left:0;top:0;z-index:7;background:var(--panel);writing-mode:horizontal-tb;transform:none;height:auto;min-width:130px;}
+table.matrix tbody th{position:sticky;left:0;background:var(--panel2);z-index:4;text-align:left;padding:6px 8px;font-size:11px;font-weight:600;color:#fff;min-width:130px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+table.matrix td.cell{width:30px;height:30px;cursor:pointer;font-weight:800;color:#fff;background:#00000020;}
+table.matrix td.cell.W{background:var(--green);}
+table.matrix td.cell.L{background:var(--red);}
+table.matrix td.cell.P{background:var(--amber);color:#101010;}
+table.matrix td.cell.dim{opacity:.35;}
+table.matrix tbody tr:nth-child(even) th{background:#252732;}
+
+/* Log */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.form-grid label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;}
+.form-grid select,.form-grid input,.form-grid textarea{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;}
+.form-grid .full{grid-column:1/-1;}
+.check-row{display:flex;align-items:center;gap:8px;grid-column:1/-1;font-size:12.5px;}
+.check-row input{width:18px;height:18px;}
+
+.log-entry{background:var(--panel2);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;}
+.log-entry .top{display:flex;justify-content:space-between;gap:8px;align-items:center;}
+.log-entry .title{font-weight:700;color:#fff;}
+.log-entry .meta{color:var(--muted);font-size:11px;margin-top:2px;}
+.log-entry .badge{padding:2px 8px;border-radius:12px;font-size:10px;font-weight:800;}
+.log-entry .badge.W{background:var(--green);color:#fff;}
+.log-entry .badge.L{background:var(--red);color:#fff;}
+.log-entry .badge.P{background:var(--amber);color:#101010;}
+.log-entry .del{background:none;border:none;color:var(--muted);font-size:16px;padding:2px 6px;}
+.log-entry .notes{margin-top:6px;color:var(--text);font-style:italic;}
+.empty{color:var(--muted);font-size:12.5px;text-align:center;padding:20px 0;}
+
+/* Guide */
+.guide-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;}
+.guide-table th,.guide-table td{border:1px solid var(--border);padding:8px;text-align:left;vertical-align:top;}
+.guide-table th{background:var(--panel2);color:#fff;}
+.quote{border-left:3px solid var(--red);padding-left:12px;font-style:italic;color:var(--muted);font-size:13px;margin:10px 0;}
+
+footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-size:11px;}
+.foot button{margin:4px;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Marvel Champions Tracker</h1>
+  <div class="sub">Chronological Progression &amp; Full Matrix</div>
+</header>
+
+<nav class="tabs">
+  <button data-view="home" class="active">Home</button>
+  <button data-view="phases">Phases</button>
+  <button data-view="matrix">Matrix</button>
+  <button data-view="log">Log Play</button>
+  <button data-view="guide">Guide</button>
+</nav>
+
+<main>
+
+  <!-- HOME -->
+  <section id="view-home" class="view active">
+    <div class="card">
+      <h2>Progress</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="num" id="statHeroesDone">0/65</div><div class="lbl">Heroes Benchmarked</div></div>
+        <div class="stat"><div class="num" id="statScenariosDone">0/60</div><div class="lbl">Scenarios Unlocked</div></div>
+        <div class="stat"><div class="num" id="statMatrixDone">0/3900</div><div class="lbl">Matrix Cells Filled</div></div>
+        <div class="stat"><div class="num" id="statCurrentPhase">0</div><div class="lbl">Current Phase</div></div>
+      </div>
+      <div class="progress-bar"><div id="progHeroes" style="width:0%"></div></div>
+      <p class="muted" style="margin-top:6px;">Heroes benchmarked (all 3 steps complete)</p>
+      <div class="progress-bar"><div id="progMatrix" style="width:0%"></div></div>
+      <p class="muted" style="margin-top:6px;">Full Hero x Scenario matrix filled</p>
+      <button class="big-btn" data-goto="log">+ Log a Play</button>
+    </div>
+
+    <div class="card">
+      <h3>Where you left off</h3>
+      <p class="muted" id="currentPhaseSummary">Loading…</p>
+      <button class="btn2" id="jumpCurrentPhase">Open current phase</button>
+    </div>
+
+    <div class="card">
+      <h3>How this progression works</h3>
+      <p class="muted">Owning the complete collection creates a strange problem: almost everything is available at once. This tracker recreates the history of the game, one release at a time — benchmark each hero against a fixed Expert Klaw test, unlock scenarios as they release, and let the full Hero x Scenario matrix fill in behind you. See the Guide tab for the full rules.</p>
+    </div>
+
+    <div class="card">
+      <h3>Backup</h3>
+      <p class="muted">Your data is saved in this browser only. Export a backup before clearing Safari data or switching devices.</p>
+      <button class="btn2" id="exportBtn">Export backup (JSON)</button>
+      <button class="btn2" id="importBtn">Import backup</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none;">
+      <button class="btn2" id="resetBtn" style="color:#e8828a;">Reset all data</button>
+    </div>
+  </section>
+
+  <!-- PHASES -->
+  <section id="view-phases" class="view">
+    <div class="card" style="margin-bottom:10px;">
+      <p class="muted">Tap a phase to open it. Tap a hero's step to mark it complete. Tap a scenario chip to mark it unlocked/played.</p>
+    </div>
+    <div id="phaseList"></div>
+  </section>
+
+  <!-- MATRIX -->
+  <section id="view-matrix" class="view">
+    <div class="card">
+      <div class="matrix-controls">
+        <input type="text" id="heroFilter" placeholder="Filter heroes…">
+        <input type="text" id="scenarioFilter" placeholder="Filter scenarios…">
+        <button class="toggle-pill" id="unlockedOnly">Unlocked scenarios only</button>
+        <button class="toggle-pill" id="benchmarkedOnly">Benchmarked heroes only</button>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--green)"></i>Win</span>
+        <span><i style="background:var(--red)"></i>Loss</span>
+        <span><i style="background:var(--amber)"></i>Played/Special</span>
+        <span><i style="background:#00000020;border:1px solid #444"></i>Blank</span>
+        <span class="muted">Tap a cell to cycle result</span>
+      </div>
+      <div class="matrix-wrap"><div id="matrixTableHolder"></div></div>
+    </div>
+  </section>
+
+  <!-- LOG -->
+  <section id="view-log" class="view">
+    <div class="card">
+      <h2>Log a Play</h2>
+      <div class="form-grid">
+        <div>
+          <label>Date</label>
+          <input type="date" id="logDate">
+        </div>
+        <div>
+          <label>Difficulty</label>
+          <select id="logDifficulty">
+            <option value="Standard">Standard</option>
+            <option value="Expert">Expert</option>
+          </select>
+        </div>
+        <div>
+          <label>Hero</label>
+          <select id="logHero"></select>
+        </div>
+        <div>
+          <label>Deck</label>
+          <select id="logDeck">
+            <option value="Precon">Precon</option>
+            <option value="Custom">Custom</option>
+          </select>
+        </div>
+        <div class="full">
+          <label>Scenario / Villain</label>
+          <select id="logScenario"></select>
+        </div>
+        <div>
+          <label>Result</label>
+          <select id="logResult">
+            <option value="W">W — Win</option>
+            <option value="L">L — Loss</option>
+            <option value="P">P — Played / Special</option>
+          </select>
+        </div>
+        <div>
+          <label>Attempts</label>
+          <input type="number" id="logAttempts" min="1" value="1">
+        </div>
+        <div class="full">
+          <label>Notes</label>
+          <textarea id="logNotes" rows="2" placeholder="Key cards, what worked, what didn't…"></textarea>
+        </div>
+        <div class="check-row">
+          <input type="checkbox" id="logApplyMatrix" checked>
+          <label for="logApplyMatrix" style="margin:0;">Apply this result to the matrix / benchmark steps</label>
+        </div>
+      </div>
+      <button class="big-btn" id="saveLogBtn">Save Entry</button>
+    </div>
+
+    <div class="card">
+      <h3>Play History</h3>
+      <input type="text" id="logSearch" placeholder="Search log…" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:10px;">
+      <div id="logList"></div>
+    </div>
+  </section>
+
+  <!-- GUIDE -->
+  <section id="view-guide" class="view">
+    <div class="card">
+      <h2>How This Progression Works</h2>
+      <p class="muted">Owning the complete Marvel Champions LCG collection creates a strange problem: almost everything is available at once. This guide deliberately removes that choice overload. Instead of treating the collection as one enormous card pool, you recreate the history of the game, one release at a time — learning what each hero was designed to do, rebuilding it with the historical card pool, and gradually completing the full Hero x Scenario matrix.</p>
+    </div>
+
+    <div class="card">
+      <h3>The Standard Hero Procedure</h3>
+      <ol class="steps">
+        <li>Play the hero's untouched precon vs Standard Klaw — the learning game.</li>
+        <li>Play the exact same precon vs Expert Klaw + Masters of Evil — the historical benchmark. Don't improve the deck first.</li>
+        <li>Evaluate the precon: dead cards, resource problems, setup speed, threat control, damage, survivability.</li>
+        <li>Modify or rebuild the deck, using only player cards released by that point in the chronology.</li>
+        <li>Take the modified deck back against the exact same Expert Klaw + Masters of Evil configuration.</li>
+        <li>Record the result, then begin using the hero against your unlocked scenario library.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h3>Why Expert Klaw?</h3>
+      <p class="muted">Klaw asks a deck to do several things rather than test one extreme: threat pressure, side schemes, minions, encounter-card pressure, an awkward opening board. Keeping one Klaw configuration unchanged gives the whole project a consistent measuring stick — a hero released years later is asked to pass the same exam as an early Core Set hero. Losing isn't a failure; the interesting comparison is Precon Expert Klaw vs. Custom Expert Klaw.</p>
+    </div>
+
+    <div class="card">
+      <h3>The Matrix Rule That Prevents Burnout</h3>
+      <p class="muted">The full Hero x Scenario matrix is the ultimate completionist objective, not a gate that blocks new content. When a new hero appears, benchmark it and use it against current content. When a new scenario appears, play it and add it to the library. Older combinations can be filled in whenever you want to revisit them — this keeps the collection moving forward while the matrix slowly fills in behind you.</p>
+    </div>
+
+    <div class="card">
+      <h3>Recommended Result Codes</h3>
+      <table class="guide-table">
+        <tr><th>Code</th><th>Meaning</th><th>Use</th><th>Recommendation</th></tr>
+        <tr><td><b>W</b></td><td>Win</td><td>Scenario completed</td><td>Counts as a completed pairing.</td></tr>
+        <tr><td><b>L</b></td><td>Loss</td><td>Attempt recorded</td><td>Keep it — losses are part of the history.</td></tr>
+        <tr><td><b>P</b></td><td>Played / special result</td><td>Unusual scenarios or abandoned games</td><td>Use sparingly when W/L doesn't tell the story.</td></tr>
+        <tr><td><b>Blank</b></td><td>Not yet played</td><td>Backlog</td><td>No pressure to fill immediately.</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Suggested Klaw Benchmark Notes</h3>
+      <p class="muted">For each hero, capture: precon result &amp; attempts, custom result &amp; attempts, aspect used, setup speed, threat control, minion handling, resource economy, survivability, key overperforming cards, dead precon cards, and the single biggest change that improved the custom deck. Use the Notes field on each hero card in the Phases tab.</p>
+    </div>
+
+    <div class="card">
+      <h3>A Good Session Structure</h3>
+      <p class="muted">One benchmark game plus one progression game is enough for a normal evening — e.g. a newly unlocked hero's precon vs Expert Klaw, a few minutes of deck tweaking, then the custom version against the newest campaign scenario. Return to Expert Klaw for the custom benchmark another night. This keeps the lab from feeling repetitive.</p>
+    </div>
+
+    <div class="card">
+      <h3>What Counts as 'Done'?</h3>
+      <table class="guide-table">
+        <tr><th>Layer</th><th>Completion requirement</th><th>Optional mastery</th></tr>
+        <tr><td>Hero</td><td>Precon Standard Klaw, Precon Expert Klaw, Custom Expert Klaw</td><td>Multiple aspects/builds, Expert scenario clears</td></tr>
+        <tr><td>Scenario</td><td>At least one Standard play</td><td>Every hero, Expert mode, alternative modulars</td></tr>
+        <tr><td>Campaign</td><td>One chronological campaign playthrough</td><td>Expert campaign, different heroes, challenge variants</td></tr>
+        <tr><td>Full collection</td><td>Reach the current end of the roadmap</td><td>Complete every Hero x Scenario cell</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Final Principle</h3>
+      <p class="quote">The roadmap exists to make a huge collection feel smaller. Never let completionism reverse that purpose. The chronological unlock order gives every product a moment to breathe; the fixed Klaw benchmark gives every hero a common test; and the matrix gives you a permanent long-term objective. You are allowed to progress before the matrix is complete. The matrix is the journey after the journey.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot"><span id="versionTag">Marvel Champions Progression Tracker — data saved locally on this device</span></footer>
+
+<script>
+/* ============================= DATA ============================= */
+// Each phase: id, title, date, blurb, heroes:[[id,name]], scenarios:[[id,name]],
+// campaign: {name, order:[ids]} | {name, sandbox:[ids], final:id} | null, steps:[strings]
+const PHASES = [
+{id:0,title:"Core Set",date:"November 2019",
+ blurb:"Your tutorial era — deserves more time than any later single release. Establish the baseline against which everything else will be understood.",
+ heroes:[["spiderman-peter","Spider-Man (Peter Parker)"],["captainmarvel","Captain Marvel"],["shehulk","She-Hulk"],["ironman","Iron Man"],["blackpanther-tchalla","Black Panther (T'Challa)"]],
+ scenarios:[["rhino","Rhino"],["klaw","Klaw"],["ultron","Ultron"]],
+ campaign:null,
+ steps:["Start with Spider-Man's precon vs Standard Rhino + Bomb Scare — the cleanest intro to the game's rhythm.","Optionally repeat a learning game with Captain Marvel for a second perspective.","For each Core hero: precon vs Standard Rhino, precon vs Standard Klaw, then the Expert Klaw benchmark.","Build a custom historical-pool deck and repeat Expert Klaw.","Use the custom deck vs Standard Ultron (Expert Ultron is optional, not required)."]},
+{id:1,title:"First Hero Packs and Green Goblin",date:"December 2019",
+ blurb:"The first expansion step: new heroes expand deckbuilding while Green Goblin expands the scenario library.",
+ heroes:[["captainamerica","Captain America"],["msmarvel","Ms. Marvel"]],
+ scenarios:[["riskybusiness","Risky Business (Green Goblin)"],["mutagenformula","Mutagen Formula (Green Goblin)"]],
+ campaign:null,
+ steps:["Benchmark Captain America using the full hero procedure.","Benchmark Ms. Marvel using the full hero procedure.","Play Risky Business and Mutagen Formula as distinct scenarios — each gets its own matrix column.","Core heroes can begin filling Green Goblin matchups whenever you like."]},
+{id:2,title:"Wrecking Crew",date:"February 2020",
+ blurb:"Mechanically unusual enough to treat as a dedicated historical stop rather than just another generic villain.",
+ heroes:[], scenarios:[["wreckingcrew","Wrecking Crew"]], campaign:null,
+ steps:["Play Wrecking Crew on Standard with at least one hero from your current roster.","Add it permanently to the matrix.","Cycle early heroes through it if you enjoy it; otherwise leave as optional backlog."]},
+{id:3,title:"Early Avengers Hero Wave",date:"March–August 2020",
+ blurb:"Ideal for seeing just how different precons and hero power levels can feel even within the game's first year.",
+ heroes:[["thor","Thor"],["blackwidow","Black Widow"],["doctorstrange","Doctor Strange"],["hulk","Hulk"]],
+ scenarios:[], campaign:null,
+ steps:["For each hero: Precon Standard Klaw → Precon Expert Klaw → historical-pool custom deck → Custom Expert Klaw.","After benchmarking, use each new hero against whichever unlocked scenarios interest you most.","Don't 'fix' an old precon before its benchmark game — the untouched result is part of the experiment."]},
+{id:4,title:"Rise of Red Skull",date:"September 2020",
+ blurb:"The first major campaign milestone. From here on, campaign boxes are events in the progression, not just bundles of villains.",
+ heroes:[["hawkeye","Hawkeye"],["spiderwoman","Spider-Woman"]],
+ scenarios:[["crossbones","Crossbones"],["absorbingman","Absorbing Man"],["taskmaster","Taskmaster"],["zola","Zola"],["redskull","Red Skull"]],
+ campaign:{name:"Rise of Red Skull",order:["crossbones","absorbingman","taskmaster","zola","redskull"]},
+ steps:["Benchmark Hawkeye and Spider-Woman first.","Play the campaign in order: Crossbones → Absorbing Man → Taskmaster → Zola → Red Skull.","Using one or both box heroes for the first playthrough gives the strongest release-era experience.","Once complete, all five scenarios become permanent matrix entries."]},
+{id:5,title:"The Once and Future Kang",date:"October 2020",
+ blurb:"Another scenario-pack milestone with unusual structural elements, especially in multiplayer.",
+ heroes:[], scenarios:[["kang","Kang"]], campaign:null,
+ steps:["Play Kang first with a deck you already know well so the scenario itself is the new variable.","Add Kang to the permanent matrix — record whichever matchup you actually played."]},
+{id:6,title:"Ant-Man to Scarlet Witch",date:"November 2020–March 2021",
+ blurb:"The player-card pool is now large enough that historical deckbuilding becomes much more expressive.",
+ heroes:[["antman","Ant-Man"],["wasp","Wasp"],["quicksilver","Quicksilver"],["scarletwitch","Scarlet Witch"]],
+ scenarios:[], campaign:null,
+ steps:["Run the standard benchmark procedure for all four heroes.","Keep restricting custom decks to the card pool available when each hero entered the game.","Feel free to keep multiple custom builds — only one successful Custom Expert Klaw is needed for the main progression."]},
+{id:7,title:"Galaxy's Most Wanted",date:"April 2021",
+ blurb:"A major difficulty checkpoint. Treat the campaign as an experience, not a demand that every scenario be beaten on Expert.",
+ heroes:[["rocketraccoon","Rocket Raccoon"],["groot","Groot"]],
+ scenarios:[["drang","Drang"],["collector1","Collector I"],["collector2","Collector II"],["nebula-scenario","Nebula"],["ronan","Ronan the Accuser"]],
+ campaign:{name:"Galaxy's Most Wanted",order:["drang","collector1","collector2","nebula-scenario","ronan"]},
+ steps:["Benchmark Rocket Raccoon and Groot.","Play the campaign in order: Drang → Collector I → Collector II → Nebula → Ronan the Accuser.","Record campaign losses — retries don't invalidate the progression.","After the campaign, each scenario joins the permanent matrix."]},
+{id:8,title:"Guardians Hero Wave",date:"May–September 2021",
+ blurb:"Greatly expands the Guardian roster with several heroes whose risk profiles and play patterns differ dramatically.",
+ heroes:[["starlord","Star-Lord"],["gamora","Gamora"],["drax","Drax"],["venom-hero","Venom"],["nebula-hero","Nebula"]],
+ scenarios:[], campaign:null,
+ steps:["Benchmark each hero separately.","After each benchmark, add the hero to the matrix and sample earlier scenarios rather than clearing the whole backlog immediately.","Use the notes field to record what makes each hero's precon succeed or fail."]},
+{id:9,title:"Mad Titan's Shadow",date:"October 2021",
+ blurb:"An excellent chronological checkpoint — its scenarios feel substantially different from the early Core-era game.",
+ heroes:[["adamwarlock","Adam Warlock"],["spectrum","Spectrum"]],
+ scenarios:[["ebonymaw","Ebony Maw"],["towerdefense","Tower Defense"],["thanos","Thanos"],["hela","Hela"],["loki","Loki"]],
+ campaign:{name:"Mad Titan's Shadow",order:["ebonymaw","towerdefense","thanos","hela","loki"]},
+ steps:["Benchmark Adam Warlock and Spectrum.","Play the campaign in scenario order.","Once complete, unlock all five scenarios for free play and matrix completion."]},
+{id:10,title:"Late Avengers and The Hood",date:"November 2021–January 2022",
+ blurb:"Combines three hero benchmarks with one scenario pack that dramatically expands modular encounter options.",
+ heroes:[["warmachine","War Machine"],["vision","Vision"],["valkyrie","Valkyrie"]],
+ scenarios:[["thehood","The Hood"]], campaign:null,
+ steps:["Benchmark War Machine, Vision and Valkyrie as they enter the chronology.","Play The Hood and add it to the matrix.","The matrix tracks scenario identity, not every modular-set permutation."]},
+{id:11,title:"Sinister Motives",date:"April 2022",
+ blurb:"Begins a strong Web-Warrior period — best experienced as a campaign before its scenarios are broken apart for individual play.",
+ heroes:[["ghostspider","Ghost-Spider"],["spiderman-miles","Spider-Man (Miles Morales)"]],
+ scenarios:[["sandman","Sandman"],["venom-scenario","Venom"],["mysterio","Mysterio"],["sinistersix","Sinister Six"],["venomgoblin","Venom Goblin"]],
+ campaign:{name:"Sinister Motives",order:["sandman","venom-scenario","mysterio","sinistersix","venomgoblin"]},
+ steps:["Benchmark both box heroes.","Play the full campaign in order.","Afterward, unlock all five scenarios for individual matchups.","Consider revisiting Core Spider-Man later with the expanded 2022 card pool."]},
+{id:12,title:"Web-Warrior Era",date:"May–July 2022",
+ blurb:"Four more heroes arrive in quick succession — the benchmark routine keeps the project structured as the pool grows.",
+ heroes:[["nova","Nova"],["ironheart","Ironheart"],["spiderham","Spider-Ham"],["spdr","SP//dr"]],
+ scenarios:[], campaign:null,
+ steps:["Benchmark each hero before extensively modifying them.","Add each hero to the matrix immediately after their benchmark.","Use old scenarios as palate cleansers between new hero tests."]},
+{id:13,title:"Mutant Genesis",date:"September 2022",
+ blurb:"The start of the mutant era — a natural major chapter break in the collection.",
+ heroes:[["shadowcat","Shadowcat"],["colossus","Colossus"],["cyclops","Cyclops"],["phoenix","Phoenix"]],
+ scenarios:[["sabretooth","Sabretooth"],["projectwideawake","Project Wideawake"],["mastermold","Master Mold"],["mansionattack","Mansion Attack"],["magneto-scenario","Magneto"]],
+ campaign:{name:"Mutant Genesis",order:["sabretooth","projectwideawake","mastermold","mansionattack","magneto-scenario"]},
+ steps:["Benchmark all four heroes from the opening mutant release period.","Play Mutant Genesis in campaign order.","Unlock all five scenarios afterward.","Keep using the same Expert Klaw benchmark despite the thematic shift — consistency is what makes the comparison useful."]},
+{id:14,title:"More X-Men and MojoMania",date:"November 2022–February 2023",
+ blurb:"Mixes hero releases with a compact three-scenario pack.",
+ heroes:[["wolverine","Wolverine"],["storm","Storm"],["gambit","Gambit"],["rogue","Rogue"]],
+ scenarios:[["magog","Magog"],["spiral","Spiral"],["mojo","Mojo"]], campaign:null,
+ steps:["Benchmark Wolverine and Storm, then play the three MojoMania scenarios.","Benchmark Gambit and Rogue when you reach February 2023.","Add Magog, Spiral and Mojo as separate matrix columns."]},
+{id:15,title:"NeXt Evolution",date:"August 2023",
+ blurb:"Begins the X-Force chapter and again follows the benchmark-then-campaign rhythm.",
+ heroes:[["cable","Cable"],["domino","Domino"]],
+ scenarios:[["morlocksiege","Morlock Siege"],["ontherun","On the Run"],["juggernaut","Juggernaut"],["mistersinister","Mister Sinister"],["stryfe","Stryfe"]],
+ campaign:{name:"NeXt Evolution",order:["morlocksiege","ontherun","juggernaut","mistersinister","stryfe"]},
+ steps:["Benchmark Cable and Domino.","Play the campaign in order.","Unlock all five scenarios for permanent free play."]},
+{id:16,title:"X-Force Hero Wave",date:"September–November 2023",
+ blurb:"A particularly varied set of heroes — a good phase for testing how the fixed Klaw lab handles radically different designs.",
+ heroes:[["psylocke","Psylocke"],["angel","Angel"],["x23","X-23"],["deadpool","Deadpool"]],
+ scenarios:[], campaign:null,
+ steps:["Benchmark all four heroes.","Keep the same Expert Klaw test even for unusual decks like Deadpool — the point is consistency, not scenario neutrality."]},
+{id:17,title:"Age of Apocalypse",date:"March 2024",
+ blurb:"Closes in on the end of the long mutant campaign arc.",
+ heroes:[["bishop","Bishop"],["magik","Magik"]],
+ scenarios:[["unus","Unus"],["fourhorsemen","Four Horsemen"],["apocalypse1","Apocalypse I"],["darkbeast","Dark Beast"],["apocalypse2","Apocalypse II"]],
+ campaign:{name:"Age of Apocalypse",order:["unus","fourhorsemen","apocalypse1","darkbeast","apocalypse2"]},
+ steps:["Benchmark Bishop and Magik.","Play the campaign in order.","Treat Apocalypse I and Apocalypse II as separate matrix scenarios — they're distinct experiences."]},
+{id:18,title:"Final Mutant Heroes",date:"May–November 2024",
+ blurb:"Finish the mutant hero releases while continuing to fill mutant-era scenario matchups at your own pace.",
+ heroes:[["iceman","Iceman"],["jubilee","Jubilee"],["nightcrawler","Nightcrawler"],["magneto-hero","Magneto"]],
+ scenarios:[], campaign:null,
+ steps:["Benchmark each hero in release order.","Once Magneto is complete, treat it as a checkpoint — review your Klaw results and note which heroes/aspects you enjoyed most."]},
+{id:19,title:"Agents of S.H.I.E.L.D.",date:"March 2025",
+ blurb:"Begins the S.H.I.E.L.D. era with another campaign box — back to the familiar benchmark-then-campaign structure.",
+ heroes:[["mariahill","Maria Hill"],["nickfury","Nick Fury"]],
+ scenarios:[["blackwidow-scenario","Black Widow"],["batroc","Batroc"],["modok","M.O.D.O.K."],["thunderbolts","Thunderbolts"],["arnimzola","Arnim Zola"]],
+ campaign:{name:"Agents of S.H.I.E.L.D.",order:["blackwidow-scenario","batroc","modok","thunderbolts","arnimzola"]},
+ steps:["Benchmark Maria Hill and Nick Fury.","Play the campaign in order.","Add all five scenarios to the permanent matrix."]},
+{id:20,title:"S.H.I.E.L.D. Hero Wave",date:"May–June 2025",
+ blurb:"A straightforward hero progression phase.",
+ heroes:[["blackpanther-shuri","Black Panther (Shuri)"],["silk","Silk"],["falcon","Falcon"],["wintersoldier","Winter Soldier"]],
+ scenarios:[], campaign:null,
+ steps:["Benchmark each hero.","Keep Black Panther (Shuri) separate from Black Panther (T'Challa) everywhere in your records.","Use the matrix backlog selectively — no need to clear every older scenario first."]},
+{id:21,title:"Trickster Takeover",date:"August 2025",
+ blurb:"A scenario-pack stop in the chronology.",
+ heroes:[], scenarios:[["trickstertakeover","Trickster Takeover"]], campaign:null,
+ steps:["Play the scenario content on Standard first.","Add it to your matrix and revisit it with additional heroes over time."]},
+{id:22,title:"Civil War",date:"October 2025",
+ blurb:"Another late-era scenario milestone.",
+ heroes:[], scenarios:[["civilwar","Civil War"]], campaign:null,
+ steps:["Play the scenario content as its own chronological stop.","Add it to the permanent matrix once experienced."]},
+{id:23,title:"Synthezoid Smackdown",date:"December 2025",
+ blurb:"Continue the same scenario-pack procedure.",
+ heroes:[], scenarios:[["synthezoidsmackdown","Synthezoid Smackdown"]], campaign:null,
+ steps:["Play the content on Standard.","Record it as unlocked and begin filling hero matchups whenever desired."]},
+{id:24,title:"Wonder Man and Hercules",date:"February 2026",
+ blurb:"Return to the hero benchmark routine for both heroes.",
+ heroes:[["wonderman","Wonder Man"],["hercules","Hercules"]],
+ scenarios:[], campaign:null,
+ steps:["Wonder Man: Precon Standard Klaw → Precon Expert Klaw → Custom Expert Klaw.","Hercules: Precon Standard Klaw → Precon Expert Klaw → Custom Expert Klaw.","After benchmarking, both heroes enter the permanent matrix."]},
+{id:25,title:"Fear No Evil",date:"July 2026",
+ blurb:"The current endpoint of this progression roadmap. The campaign is dynamic: the first five scenarios form an Underling Sandbox playable in any order, while the sixth is always the mandatory final showdown against Kingpin.",
+ heroes:[["daredevil","Daredevil"],["echo","Echo"]],
+ scenarios:[["bullseye","Bullseye"],["electro","Electro"],["hammerhead","Hammerhead"],["purpleman","Purple Man"],["typhoidmary","Typhoid Mary"],["kingpin","Kingpin"]],
+ campaign:{name:"Fear No Evil",sandbox:["bullseye","electro","hammerhead","purpleman","typhoidmary"],final:"kingpin"},
+ steps:["Benchmark Daredevil and Echo exactly like every previous hero.","Choose one hero released in or before Phase 25 as your campaign hero — doesn't have to be Daredevil or Echo.","Play Fear No Evil as one complete campaign, not six unrelated boss games.","Choose your own route through the 5 Underling Sandbox scenarios and record the order you picked.","Carry forward all campaign-specific state, rewards, penalties and setup changes.","Once all 5 sandbox scenarios are resolved, proceed to Kingpin — always the mandatory final showdown.","Only mark the campaign complete after reaching Kingpin.","Individual bosses can still be tracked separately in the permanent matrix — campaign completion and matrix completion are different objectives."]}
+];
+
+// Flatten heroes/scenarios with phase refs, preserving release order
+const HEROES = [];
+const SCENARIOS = [];
+PHASES.forEach(ph=>{
+  ph.heroes.forEach(([id,name])=>HEROES.push({id,name,phase:ph.id}));
+  ph.scenarios.forEach(([id,name])=>SCENARIOS.push({id,name,phase:ph.id}));
+});
+const HERO_BY_ID = Object.fromEntries(HEROES.map(h=>[h.id,h]));
+const SCEN_BY_ID = Object.fromEntries(SCENARIOS.map(s=>[s.id,s]));
+
+/* ============================= STATE ============================= */
+const STORE_KEY = "mcTrackerState_v1";
+function defaultState(){
+  return {
+    heroBenchmarks: {}, // id -> {preconStd,preconExp,customExp,notes}
+    scenarioUnlocked: {}, // id -> bool
+    campaignComplete: {}, // phaseId -> bool
+    fneOrder: {}, // scenarioId -> order number (1-5) for Fear No Evil sandbox
+    fneHero: "", // chosen campaign hero id
+    matrix: {}, // "heroId|scenarioId" -> "W"|"L"|"P"
+    log: [] // {id,date,heroId,scenarioId,difficulty,deck,result,attempts,notes,ts}
+  };
+}
+let STATE = loadState();
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    return Object.assign(defaultState(), parsed);
+  }catch(e){ return defaultState(); }
+}
+function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }
+
+function heroBench(id){
+  if(!STATE.heroBenchmarks[id]) STATE.heroBenchmarks[id] = {preconStd:false,preconExp:false,customExp:false,notes:""};
+  return STATE.heroBenchmarks[id];
+}
+function isHeroDone(id){ const b=STATE.heroBenchmarks[id]; return !!(b && b.preconStd && b.preconExp && b.customExp); }
+function isScenarioUnlocked(id){ return !!STATE.scenarioUnlocked[id]; }
+function matrixKey(h,s){ return h+"|"+s; }
+function cycleResult(cur){ return cur==="" ? "W" : cur==="W" ? "L" : cur==="L" ? "P" : ""; }
+
+/* ============================= NAV ============================= */
+document.querySelectorAll("nav.tabs button").forEach(btn=>{
+  btn.addEventListener("click",()=>showView(btn.dataset.view));
+});
+document.querySelectorAll("[data-goto]").forEach(el=>{
+  el.addEventListener("click",()=>showView(el.dataset.goto));
+});
+function showView(name){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("active", b.dataset.view===name));
+  document.querySelectorAll("main .view").forEach(v=>v.classList.toggle("active", v.id==="view-"+name));
+  if(name==="matrix") renderMatrix();
+  if(name==="log") renderLog();
+  if(name==="home") renderHome();
+  if(name==="phases") renderPhases();
+  window.scrollTo(0,0);
+}
+
+/* ============================= HOME ============================= */
+function renderHome(){
+  const heroesDone = HEROES.filter(h=>isHeroDone(h.id)).length;
+  const scenariosDone = SCENARIOS.filter(s=>isScenarioUnlocked(s.id)).length;
+  const totalCells = HEROES.length * SCENARIOS.length;
+  const filledCells = Object.values(STATE.matrix).filter(v=>v).length;
+
+  document.getElementById("statHeroesDone").textContent = heroesDone+"/"+HEROES.length;
+  document.getElementById("statScenariosDone").textContent = scenariosDone+"/"+SCENARIOS.length;
+  document.getElementById("statMatrixDone").textContent = filledCells+"/"+totalCells;
+
+  // current phase = first phase not fully complete
+  let current = PHASES[PHASES.length-1];
+  for(const ph of PHASES){
+    const heroesOk = ph.heroes.every(([id])=>isHeroDone(id));
+    const scenOk = ph.scenarios.every(([id])=>isScenarioUnlocked(id));
+    const campOk = ph.campaign ? !!STATE.campaignComplete[ph.id] : true;
+    if(!(heroesOk && scenOk && campOk)){ current = ph; break; }
+  }
+  document.getElementById("statCurrentPhase").textContent = current.id;
+  document.getElementById("progHeroes").style.width = (heroesDone/HEROES.length*100)+"%";
+  document.getElementById("progMatrix").style.width = (filledCells/totalCells*100)+"%";
+  document.getElementById("currentPhaseSummary").textContent = "Phase "+current.id+" — "+current.title+" ("+current.date+")";
+  document.getElementById("jumpCurrentPhase").onclick = ()=>{ showView("phases"); setTimeout(()=>openPhase(current.id),50); };
+}
+
+/* ============================= PHASES ============================= */
+let openPhaseId = null;
+function renderPhases(){
+  const holder = document.getElementById("phaseList");
+  holder.innerHTML = "";
+  PHASES.forEach(ph=>{
+    const heroesOk = ph.heroes.every(([id])=>isHeroDone(id));
+    const scenOk = ph.scenarios.every(([id])=>isScenarioUnlocked(id));
+    const campOk = ph.campaign ? !!STATE.campaignComplete[ph.id] : true;
+    const allDone = heroesOk && scenOk && campOk && (ph.heroes.length+ph.scenarios.length>0 || ph.campaign);
+    const anyProgress = ph.heroes.some(([id])=>{const b=STATE.heroBenchmarks[id];return b&&(b.preconStd||b.preconExp||b.customExp);}) ||
+                         ph.scenarios.some(([id])=>isScenarioUnlocked(id));
+
+    const item = document.createElement("div");
+    item.className = "phase-item" + (openPhaseId===ph.id ? " open":"");
+    item.innerHTML = `
+      <div class="phase-head" data-ph="${ph.id}">
+        <div class="phase-num ${allDone?'done':(anyProgress?'partial':'')}">${ph.id}</div>
+        <div class="phase-headtext">
+          <div class="t">${ph.title}</div>
+          <div class="d">${ph.date}</div>
+        </div>
+        <div class="chev">▶</div>
+      </div>
+      <div class="phase-body"></div>
+    `;
+    holder.appendChild(item);
+    item.querySelector(".phase-head").addEventListener("click",()=>{
+      openPhaseId = (openPhaseId===ph.id) ? null : ph.id;
+      renderPhases();
+      if(openPhaseId===ph.id){
+        setTimeout(()=>item.scrollIntoView({behavior:"smooth",block:"start"}),80);
+      }
+    });
+    if(openPhaseId===ph.id){
+      item.querySelector(".phase-body").innerHTML = buildPhaseBody(ph);
+      wirePhaseBody(item, ph);
+    }
+  });
+}
+function openPhase(id){ openPhaseId=id; renderPhases(); }
+
+function buildPhaseBody(ph){
+  let html = `<div class="phase-blurb">${ph.blurb}</div>`;
+  html += `<ol class="steps">${ph.steps.map(s=>`<li>${s}</li>`).join("")}</ol>`;
+
+  if(ph.heroes.length){
+    html += `<h4 style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Heroes Entering</h4>`;
+    html += `<div class="chip-row">`;
+    ph.heroes.forEach(([id,name])=>{
+      const b = heroBench(id);
+      html += `<div class="hero-card">
+        <div class="name">${name}</div>
+        <div class="step-toggles">
+          <div class="step-toggle ${b.preconStd?'on':''}" data-hero="${id}" data-step="preconStd">Precon Std Klaw</div>
+          <div class="step-toggle ${b.preconExp?'on':''}" data-hero="${id}" data-step="preconExp">Precon Exp Klaw</div>
+          <div class="step-toggle ${b.customExp?'on':''}" data-hero="${id}" data-step="customExp">Custom Exp Klaw</div>
+        </div>
+        <textarea class="hero-notes" data-hero="${id}" placeholder="Benchmark notes (aspect, key cards, setup speed…)" rows="2" style="width:100%;margin-top:8px;background:#00000030;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px;font-size:11.5px;">${b.notes||""}</textarea>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if(ph.scenarios.length){
+    html += `<h4 style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Scenarios Entering</h4>`;
+    html += `<div class="chip-row">`;
+    ph.scenarios.forEach(([id,name])=>{
+      const on = isScenarioUnlocked(id);
+      html += `<div class="scenario-chip ${on?'on':''}" data-scen="${id}"><span class="dot"></span>${name}</div>`;
+    });
+    html += `</div>`;
+  }
+
+  if(ph.campaign){
+    html += `<div class="campaign-box"><div class="cname">Campaign: ${ph.campaign.name}</div>`;
+    if(ph.campaign.order){
+      html += `<ol class="order-list">${ph.campaign.order.map(sid=>`<li>${SCEN_BY_ID[sid].name}</li>`).join("")}</ol>`;
+    } else if(ph.campaign.sandbox){
+      html += `<p class="muted" style="margin-bottom:6px;">Underling Sandbox — choose your own order (1-5):</p>`;
+      html += `<ul class="order-list sandbox-order">`;
+      ph.campaign.sandbox.forEach(sid=>{
+        const v = STATE.fneOrder[sid]||"";
+        html += `<li><input type="number" min="1" max="5" data-fne-order="${sid}" value="${v}"> ${SCEN_BY_ID[sid].name}</li>`;
+      });
+      html += `</ul>`;
+      html += `<p class="muted" style="margin:8px 0 4px;">Campaign hero:</p>`;
+      html += `<select id="fneHeroSelect" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px;">
+        <option value="">— choose hero —</option>
+        ${HEROES.filter(h=>h.phase<=25).map(h=>`<option value="${h.id}" ${STATE.fneHero===h.id?'selected':''}>${h.name}</option>`).join("")}
+      </select>`;
+      html += `<p class="muted" style="margin:10px 0 4px;">Final showdown: <b style="color:#fff;">${SCEN_BY_ID[ph.campaign.final].name}</b> (mandatory, always last)</p>`;
+    }
+    html += `<div class="campaign-complete-row"><input type="checkbox" id="campComplete-${ph.id}" ${STATE.campaignComplete[ph.id]?'checked':''}><label for="campComplete-${ph.id}">Campaign complete (reached final boss)</label></div>`;
+    html += `</div>`;
+  }
+
+  return html;
+}
+
+function wirePhaseBody(item, ph){
+  item.querySelectorAll(".step-toggle").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const hid = el.dataset.hero, step = el.dataset.step;
+      const b = heroBench(hid);
+      b[step] = !b[step];
+      saveState();
+      renderPhases(); renderHome();
+    });
+  });
+  item.querySelectorAll(".hero-notes").forEach(el=>{
+    el.addEventListener("change",()=>{
+      heroBench(el.dataset.hero).notes = el.value;
+      saveState();
+    });
+  });
+  item.querySelectorAll(".scenario-chip").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const sid = el.dataset.scen;
+      STATE.scenarioUnlocked[sid] = !STATE.scenarioUnlocked[sid];
+      saveState();
+      renderPhases(); renderHome();
+    });
+  });
+  item.querySelectorAll("[data-fne-order]").forEach(el=>{
+    el.addEventListener("change",()=>{
+      STATE.fneOrder[el.dataset.fneOrder] = el.value ? parseInt(el.value,10) : undefined;
+      saveState();
+    });
+  });
+  const fneSel = item.querySelector("#fneHeroSelect");
+  if(fneSel) fneSel.addEventListener("change",()=>{ STATE.fneHero = fneSel.value; saveState(); });
+  const campBox = item.querySelector(`#campComplete-${ph.id}`);
+  if(campBox) campBox.addEventListener("change",()=>{
+    STATE.campaignComplete[ph.id] = campBox.checked;
+    saveState(); renderHome();
+  });
+}
+
+/* ============================= MATRIX ============================= */
+let matrixFilters = { hero:"", scenario:"", unlockedOnly:false, benchmarkedOnly:false };
+document.getElementById("heroFilter").addEventListener("input",e=>{ matrixFilters.hero=e.target.value.toLowerCase(); renderMatrix(); });
+document.getElementById("scenarioFilter").addEventListener("input",e=>{ matrixFilters.scenario=e.target.value.toLowerCase(); renderMatrix(); });
+document.getElementById("unlockedOnly").addEventListener("click",e=>{ matrixFilters.unlockedOnly=!matrixFilters.unlockedOnly; e.target.classList.toggle("on"); renderMatrix(); });
+document.getElementById("benchmarkedOnly").addEventListener("click",e=>{ matrixFilters.benchmarkedOnly=!matrixFilters.benchmarkedOnly; e.target.classList.toggle("on"); renderMatrix(); });
+
+function renderMatrix(){
+  let heroes = HEROES.filter(h=>h.name.toLowerCase().includes(matrixFilters.hero));
+  let scenarios = SCENARIOS.filter(s=>s.name.toLowerCase().includes(matrixFilters.scenario));
+  if(matrixFilters.unlockedOnly) scenarios = scenarios.filter(s=>isScenarioUnlocked(s.id));
+  if(matrixFilters.benchmarkedOnly) heroes = heroes.filter(h=>isHeroDone(h.id));
+
+  let html = `<table class="matrix"><thead><tr><th class="corner">Hero \\ Scenario</th>`;
+  scenarios.forEach(s=>{ html += `<th title="${s.name}">${s.name}</th>`; });
+  html += `</tr></thead><tbody>`;
+  heroes.forEach(h=>{
+    html += `<tr><th>${h.name}</th>`;
+    scenarios.forEach(s=>{
+      const key = matrixKey(h.id,s.id);
+      const val = STATE.matrix[key] || "";
+      const dim = !isScenarioUnlocked(s.id) ? "dim" : "";
+      html += `<td class="cell ${val} ${dim}" data-h="${h.id}" data-s="${s.id}">${val}</td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  if(heroes.length===0 || scenarios.length===0) html = `<p class="empty">No heroes/scenarios match your filters.</p>`;
+  document.getElementById("matrixTableHolder").innerHTML = html;
+
+  document.querySelectorAll("table.matrix td.cell").forEach(td=>{
+    td.addEventListener("click",()=>{
+      const key = matrixKey(td.dataset.h, td.dataset.s);
+      const next = cycleResult(STATE.matrix[key]||"");
+      STATE.matrix[key] = next;
+      saveState();
+      td.className = "cell " + next + (!isScenarioUnlocked(td.dataset.s)?" dim":"");
+      td.textContent = next;
+      renderHome();
+    });
+  });
+}
+
+/* ============================= LOG ============================= */
+function populateLogSelects(){
+  const heroSel = document.getElementById("logHero");
+  const scenSel = document.getElementById("logScenario");
+  heroSel.innerHTML = "";
+  scenSel.innerHTML = "";
+  PHASES.forEach(ph=>{
+    if(ph.heroes.length){
+      const og = document.createElement("optgroup");
+      og.label = "Phase "+ph.id+" — "+ph.title;
+      ph.heroes.forEach(([id,name])=>{
+        const o = document.createElement("option"); o.value=id; o.textContent=name; og.appendChild(o);
+      });
+      heroSel.appendChild(og);
+    }
+    if(ph.scenarios.length){
+      const og2 = document.createElement("optgroup");
+      og2.label = "Phase "+ph.id+" — "+ph.title;
+      ph.scenarios.forEach(([id,name])=>{
+        const o = document.createElement("option"); o.value=id; o.textContent=name; og2.appendChild(o);
+      });
+      scenSel.appendChild(og2);
+    }
+  });
+}
+populateLogSelects();
+document.getElementById("logDate").valueAsDate = new Date();
+
+document.getElementById("saveLogBtn").addEventListener("click",()=>{
+  const heroId = document.getElementById("logHero").value;
+  const scenId = document.getElementById("logScenario").value;
+  const difficulty = document.getElementById("logDifficulty").value;
+  const deck = document.getElementById("logDeck").value;
+  const result = document.getElementById("logResult").value;
+  const attempts = parseInt(document.getElementById("logAttempts").value,10) || 1;
+  const notes = document.getElementById("logNotes").value.trim();
+  const date = document.getElementById("logDate").value || new Date().toISOString().slice(0,10);
+  const apply = document.getElementById("logApplyMatrix").checked;
+
+  const entry = { id: "e"+Date.now(), date, heroId, scenarioId:scenId, difficulty, deck, result, attempts, notes, ts: Date.now() };
+  STATE.log.unshift(entry);
+
+  if(apply){
+    STATE.matrix[matrixKey(heroId,scenId)] = result;
+    STATE.scenarioUnlocked[scenId] = true;
+    if(scenId === "klaw"){
+      const b = heroBench(heroId);
+      if(difficulty==="Standard" && deck==="Precon") b.preconStd = true;
+      if(difficulty==="Expert" && deck==="Precon") b.preconExp = true;
+      if(difficulty==="Expert" && deck==="Custom") b.customExp = true;
+    }
+  }
+  saveState();
+  document.getElementById("logNotes").value = "";
+  renderLog(); renderHome();
+});
+
+function renderLog(){
+  const holder = document.getElementById("logList");
+  const q = (document.getElementById("logSearch").value||"").toLowerCase();
+  const entries = STATE.log.filter(e=>{
+    if(!q) return true;
+    const hero = HERO_BY_ID[e.heroId]?.name||"";
+    const scen = SCEN_BY_ID[e.scenarioId]?.name||"";
+    return (hero+" "+scen+" "+e.notes).toLowerCase().includes(q);
+  });
+  if(!entries.length){ holder.innerHTML = `<p class="empty">No plays logged yet.</p>`; return; }
+  holder.innerHTML = entries.map(e=>{
+    const hero = HERO_BY_ID[e.heroId]?.name || e.heroId;
+    const scen = SCEN_BY_ID[e.scenarioId]?.name || e.scenarioId;
+    return `<div class="log-entry">
+      <div class="top">
+        <div class="title">${hero} vs ${scen}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="badge ${e.result}">${e.result}</span>
+          <button class="del" data-del="${e.id}">✕</button>
+        </div>
+      </div>
+      <div class="meta">${e.date} · ${e.difficulty} · ${e.deck} deck · ${e.attempts} attempt${e.attempts>1?'s':''}</div>
+      ${e.notes ? `<div class="notes">${e.notes}</div>` : ""}
+    </div>`;
+  }).join("");
+  holder.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      STATE.log = STATE.log.filter(e=>e.id!==btn.dataset.del);
+      saveState(); renderLog();
+    });
+  });
+}
+document.getElementById("logSearch").addEventListener("input", renderLog);
+
+/* ============================= BACKUP ============================= */
+document.getElementById("exportBtn").addEventListener("click",()=>{
+  const blob = new Blob([JSON.stringify(STATE,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "marvel-champions-tracker-backup.json";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+document.getElementById("importBtn").addEventListener("click",()=>{
+  document.getElementById("importFile").click();
+});
+document.getElementById("importFile").addEventListener("change",e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = JSON.parse(reader.result);
+      STATE = Object.assign(defaultState(), parsed);
+      saveState();
+      renderHome(); renderPhases(); renderMatrix(); renderLog();
+      alert("Backup imported.");
+    }catch(err){ alert("Could not read that file."); }
+  };
+  reader.readAsText(file);
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  if(confirm("This will erase all tracked progress on this device. Continue?")){
+    STATE = defaultState();
+    saveState();
+    renderHome(); renderPhases(); renderMatrix(); renderLog();
+  }
+});
+
+/* ============================= INIT ============================= */
+renderHome();
+renderPhases();
+</script>
+</body>
+</html>
