@@ -133,6 +133,19 @@ table.matrix tbody tr:nth-child(even) th{background:#252732;}
 .log-entry .notes{margin-top:6px;color:var(--text);font-style:italic;}
 .empty{color:var(--muted);font-size:12.5px;text-align:center;padding:20px 0;}
 
+/* Decks */
+.deck-picker{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-size:14px;margin-bottom:12px;}
+.deck-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;margin-left:8px;vertical-align:middle;}
+.deck-badge.exact{background:var(--green);color:#fff;}
+.deck-badge.partial{background:var(--amber);color:#101010;}
+.deck-section h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px;}
+.deck-list{list-style:none;margin:0;padding:0;font-size:13px;}
+.deck-list li{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);}
+.deck-list li .n{color:var(--text);}
+.deck-list li .q{color:var(--muted);font-weight:700;min-width:24px;text-align:right;}
+.deck-empty{text-align:center;padding:30px 10px;color:var(--muted);font-size:13px;}
+.deck-note{font-size:11.5px;color:var(--muted);font-style:italic;margin-top:6px;}
+
 /* Guide */
 .guide-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;}
 .guide-table th,.guide-table td{border:1px solid var(--border);padding:8px;text-align:left;vertical-align:top;}
@@ -155,6 +168,7 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
   <button data-view="phases">Phases</button>
   <button data-view="matrix">Matrix</button>
   <button data-view="log">Log Play</button>
+  <button data-view="decks">Decks</button>
   <button data-view="guide">Guide</button>
 </nav>
 
@@ -239,7 +253,11 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
           <label>Difficulty</label>
           <select id="logDifficulty">
             <option value="Standard">Standard</option>
+            <option value="Standard II">Standard II</option>
+            <option value="Standard III">Standard III</option>
             <option value="Expert">Expert</option>
+            <option value="Expert II">Expert II</option>
+            <option value="Heroic">Heroic</option>
           </select>
         </div>
         <div>
@@ -252,6 +270,11 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
             <option value="Precon">Precon</option>
             <option value="Custom">Custom</option>
           </select>
+        </div>
+        <div class="full" id="heroicLevelWrap" style="display:none;">
+          <label>Heroic Level</label>
+          <input type="number" id="logHeroicLevel" min="1" max="10" value="1">
+          <p class="muted" style="margin:4px 0 0;">Heroic level is chosen per game — no fixed cap. (Note: Expert III hasn't been released by FFG yet, so it isn't listed.)</p>
         </div>
         <div class="full">
           <label>Scenario / Villain</label>
@@ -285,6 +308,16 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
       <h3>Play History</h3>
       <input type="text" id="logSearch" placeholder="Search log…" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:10px;">
       <div id="logList"></div>
+    </div>
+  </section>
+
+  <!-- DECKS -->
+  <section id="view-decks" class="view">
+    <div class="card">
+      <h2>Precon Decks</h2>
+      <p class="muted">Browse each hero's preconstructed deck as it ships in the box, plus the bonus non-signature cards the pack adds to the shared card pool. Source: MarvelCDB. Being filled in gradually — heroes not listed yet are coming in a future update.</p>
+      <select class="deck-picker" id="deckPicker"></select>
+      <div id="deckDetail"></div>
     </div>
   </section>
 
@@ -326,6 +359,11 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
         <tr><td><b>P</b></td><td>Played / special result</td><td>Unusual scenarios or abandoned games</td><td>Use sparingly when W/L doesn't tell the story.</td></tr>
         <tr><td><b>Blank</b></td><td>Not yet played</td><td>Backlog</td><td>No pressure to fill immediately.</td></tr>
       </table>
+    </div>
+
+    <div class="card">
+      <h3>Difficulty Levels</h3>
+      <p class="muted">The Log tab supports every encounter-set difficulty currently in print: Standard, Standard II (The Hood), Standard III (Age of Apocalypse), Expert, Expert II (The Hood), and Heroic (a chosen numeric level stacked on top, with no fixed cap). Expert III has not been released by Fantasy Flight Games as of this writing, so it isn't listed — it can be added easily once it exists. Only exact "Standard" and "Expert" plays against Klaw count toward the official hero benchmark steps, matching the Standard Hero Procedure above.</p>
     </div>
 
     <div class="card">
@@ -512,6 +550,60 @@ PHASES.forEach(ph=>{
 const HERO_BY_ID = Object.fromEntries(HEROES.map(h=>[h.id,h]));
 const SCEN_BY_ID = Object.fromEntries(SCENARIOS.map(s=>[s.id,s]));
 
+/* ============================= DECKS (precon data, sourced from MarvelCDB) =============================
+   confidence:"exact" = every quantity verified from the pack's full card data.
+   confidence:"partial" = hero-specific card quantities verified; aspect/basic/bonus card
+   quantities not yet confirmed, shown as names only until verified. */
+const DECKS = {
+"captainamerica":{aspect:"Leadership",confidence:"exact",
+ hero:[["Agent 13",1],["Fearless Determination",2],["Heroic Strike",3],["Shield Block",2],["Shield Toss",2],["Steve's Apartment",1],["Captain America's Helmet",1],["Captain America's Shield",1],["Super-Soldier Serum",2]],
+ aspectCards:[["Falcon",1],["Hawkeye",1],["Squirrel Girl",1],["Wonder Man",1],["Avengers Assemble!",3],["Make the Call",2],["Strength In Numbers",3],["The Power of Leadership",2],["Quinjet",3]],
+ basics:[["Mockingbird",1],["Energy",1],["Genius",1],["Strength",1],["Avengers Tower",1],["Honorary Avenger",3],["Enhanced Awareness",3]],
+ bonus:[["Enraged","Aggression",3],["Followed","Justice",3],["Expert Defense","Protection",3]]},
+"msmarvel":{aspect:"Protection",confidence:"exact",
+ hero:[["Red Dagger",1],["Big Hands",3],["Sneak By",3],["Wiggle Room",2],["Aamir Khan",1],["Bruno Carrelli",1],["Nakia Bahadir",1],["Biokinetic Polymer Suit",1],["Embiggen!",1],["Shrink",1]],
+ aspectCards:[["Nova",1],["Get Behind Me!",2],["Preemptive Strike",3],["Tackle",3],["The Power of Protection",2],["Energy Barrier",3]],
+ basics:[["Lockjaw",1],["Energy",1],["Genius",1],["Strength",1],["Avengers Mansion",1],["Endurance",3],["Enhanced Reflexes",3]],
+ bonus:[["Melee","Aggression",3],["Concussive Blow","Justice",3],["Morale Boost","Leadership",3]]},
+"thor":{aspect:"Aggression",confidence:"exact",
+ hero:[["Lady Sif",1],["Defender of the Nine Realms",3],["For Asgard!",1],["Hammer Throw",3],["Lightning Strike",2],["Asgard",1],["God of Thunder",2],["Mjolnir",1],["Thor's Helmet",1]],
+ aspectCards:[["Hercules",1],["Valkyrie",1],["Chase Them Down",2],["Get Over Here!",3],["Mean Swing",3],["The Power of Aggression",2],["Hall of Heroes",1],["Battle Fury",3],["Jarnbjorn",1]],
+ basics:[["Heimdall",1],["Invulnerability",3],["Energy",1],["Genius",1],["Strength",1],["Avengers Mansion",1]],
+ bonus:[["Under Surveillance","Justice",3],["Teamwork","Leadership",3],["Second Wind","Protection",3],["Enhanced Physique","Basic",3]]},
+"blackwidow":{aspect:"Justice",confidence:"exact",
+ hero:[["Winter Soldier",1],["Covert Ops",2],["Dance of Death",2],["Safe House #29",1],["Attacrobatics",2],["Black Widow's Gauntlet",2],["Grappling Hook",2],["Synth-Suit",1],["Widow's Bite",2]],
+ aspectCards:[["Agent Coulson",1],["Quake",1],["Stealth Strike",3],["The Power of Justice",2],["Interrogation Room",2],["Surveillance Team",2],["Counterintelligence",3],["Spycraft",3]],
+ basics:[["Nick Fury",1],["Energy",1],["Genius",1],["Strength",1],["Quincarrier",1],["Target Acquired",3]],
+ bonus:[["Counterattack","Aggression",3],["Rapid Response","Leadership",3],["Defensive Stance","Protection",3],["Espionage","Basic",3]]},
+"doctorstrange":{aspect:"Protection",confidence:"partial",
+ hero:[["Wong",1],["Astral Projection",2],["Magic Blast",2],["Master of the Mystic Arts",2],["Mystical Studies",1],["Protective Ward",2],["Sanctum Sanctorum",1],["Cloak of Levitation",1],["Magical Enhancements",2],["The Eye of Agamotto",1]],
+ extra:{label:"Invocation subset (optional, 1 copy each)",cards:[["Crimson Bands of Cyttorak",1],["Images of Ikonn",1],["Seven Rings of Raggadorr",1],["Vapors of Valtorr",1],["Winds of Watoomb",1]]},
+ aspectCards:[["Brother Voodoo",null],["Clea",null],["Iron Fist",null],["Desperate Defense",null],["Momentum Shift",null],["The Power of Protection",null],["Med Team",null],["The Night Nurse",null],["Unflappable",null]],
+ basics:[["Warning",null],["Energy",null],["Genius",null],["Strength",null],["Avengers Mansion",null],["The Sorcerer Supreme",null]],
+ bonus:[["Skilled Strike","Aggression",null],["Foiled!","Justice",null],["Iron Man","Leadership",null]]},
+"hulk":{aspect:"Aggression",confidence:"partial",
+ hero:[["Crushing Blow",2],["Hulk Smash",2],["Sub-Orbital Leap",2],["Thunderclap",2],["Unstoppable Force",2],["Limitless Strength",2],["Banner's Laboratory",1],["Boundless Rage",1],["Immovable Object",1]],
+ aspectCards:[["Brawn",null],["Sentry",null],["She-Hulk",null],["Drop Kick",null],["Toe to Toe",null],["\"You'll Pay for That!\"",null],["The Power of Aggression",null],["Martial Prowess",null]],
+ basics:[["To the Rescue!",null],["Energy",null],["Genius",null],["Strength",null],["Avengers Mansion",null],["Helicarrier",null],["Resourceful",null]],
+ bonus:[["Beat Cop","Justice",null],["Inspiring Presence","Leadership",null],["Electrostatic Armor","Protection",null]]},
+"spiderman-peter":{aspect:"Justice",confidence:"partial",coreSet:true,
+ hero:[["Black Cat",1],["Backflip",2],["Enhanced Spider-Sense",2],["Swinging Web Kick",3],["Aunt May",1],["Spider-Tracer",2],["Web-Shooter",2],["Webbed Up",2]],
+ aspectCards:[],basics:[],bonus:[]},
+"captainmarvel":{aspect:"Leadership",confidence:"partial",coreSet:true,
+ hero:[["Spider-Woman",1],["Crisis Interdiction",3],["Photonic Blast",3],["Energy Absorption",2],["Alpha Flight Station",1],["Captain Marvel's Helmet",1],["Cosmic Flight",2],["Energy Channel",2]],
+ aspectCards:[],basics:[],bonus:[]},
+"shehulk":{aspect:"Aggression",confidence:"partial",coreSet:true,
+ hero:[["Hellcat",1],["Gamma Slam",1],["Ground Stomp",2],["Legal Practice",2],["One-Two Punch",3],["Split Personality",1],["Superhuman Law Division",1],["Focused Rage",2],["Superhuman Strength",2]],
+ aspectCards:[],basics:[],bonus:[]},
+"ironman":{aspect:"Aggression",confidence:"partial",coreSet:true,
+ hero:[["War Machine",1],["Repulsor Blast",3],["Supersonic Punch",2],["Pepper Potts",1],["Stark Tower",1],["Arc Reactor",1],["Mark V Armor",1],["Mark V Helmet",1],["Powered Gauntlets",2],["Rocket Boots",2]],
+ aspectCards:[],basics:[],bonus:[],
+ note:"Shares the Aggression aspect with She-Hulk — the Core Set box only contains enough Aggression cards to build one of these two precons at a time."},
+"blackpanther-tchalla":{aspect:"Protection",confidence:"partial",coreSet:true,
+ hero:[["Shuri",1],["Ancestral Knowledge",1],["Wakanda Forever!",4],["Vibranium",3],["The Golden City",1],["Energy Daggers",1],["Panther Claws",1],["Tactical Genius",1],["Vibranium Suit",1]],
+ aspectCards:[],basics:[],bonus:[]}
+};
+
 /* ============================= STATE ============================= */
 const STORE_KEY = "mcTrackerState_v1";
 function defaultState(){
@@ -522,7 +614,7 @@ function defaultState(){
     fneOrder: {}, // scenarioId -> order number (1-5) for Fear No Evil sandbox
     fneHero: "", // chosen campaign hero id
     matrix: {}, // "heroId|scenarioId" -> "W"|"L"|"P"
-    log: [] // {id,date,heroId,scenarioId,difficulty,deck,result,attempts,notes,ts}
+    log: [] // {id,date,heroId,scenarioId,difficulty,heroicLevel,deck,result,attempts,notes,ts}
   };
 }
 let STATE = loadState();
@@ -544,6 +636,7 @@ function isHeroDone(id){ const b=STATE.heroBenchmarks[id]; return !!(b && b.prec
 function isScenarioUnlocked(id){ return !!STATE.scenarioUnlocked[id]; }
 function matrixKey(h,s){ return h+"|"+s; }
 function cycleResult(cur){ return cur==="" ? "W" : cur==="W" ? "L" : cur==="L" ? "P" : ""; }
+function formatDifficulty(e){ return (e.difficulty==="Heroic" && e.heroicLevel) ? ("Heroic "+e.heroicLevel) : e.difficulty; }
 
 /* ============================= NAV ============================= */
 document.querySelectorAll("nav.tabs button").forEach(btn=>{
@@ -559,6 +652,7 @@ function showView(name){
   if(name==="log") renderLog();
   if(name==="home") renderHome();
   if(name==="phases") renderPhases();
+  if(name==="decks") renderDeckDetail(document.getElementById("deckPicker").value);
   window.scrollTo(0,0);
 }
 
@@ -798,10 +892,78 @@ function populateLogSelects(){
 populateLogSelects();
 document.getElementById("logDate").valueAsDate = new Date();
 
+/* ============================= DECKS ============================= */
+function populateDeckPicker(){
+  const sel = document.getElementById("deckPicker");
+  sel.innerHTML = "";
+  PHASES.forEach(ph=>{
+    if(!ph.heroes.length) return;
+    const og = document.createElement("optgroup");
+    og.label = "Phase "+ph.id+" — "+ph.title;
+    ph.heroes.forEach(([id,name])=>{
+      const o = document.createElement("option");
+      o.value = id;
+      o.textContent = name + (DECKS[id] ? "" : " (coming soon)");
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+  // default to first hero that has data
+  const firstWithData = HEROES.find(h=>DECKS[h.id]);
+  if(firstWithData) sel.value = firstWithData.id;
+  sel.addEventListener("change", ()=>renderDeckDetail(sel.value));
+}
+function deckListHTML(items){
+  return `<ul class="deck-list">${items.map(([n,q])=>`<li><span class="n">${n}</span><span class="q">${q==null?'—':(q+'x')}</span></li>`).join("")}</ul>`;
+}
+function renderDeckDetail(heroId){
+  const holder = document.getElementById("deckDetail");
+  if(!holder) return;
+  const hero = HERO_BY_ID[heroId];
+  const deck = DECKS[heroId];
+  if(!hero) { holder.innerHTML = ""; return; }
+  if(!deck){
+    holder.innerHTML = `<div class="deck-empty">${hero.name}'s precon deck data hasn't been added yet — coming in a future update.</div>`;
+    return;
+  }
+  let html = `<h3 style="margin-top:4px;">${hero.name} — ${deck.aspect} <span class="deck-badge ${deck.confidence}">${deck.confidence==='exact'?'Verified counts':'Partial — see note'}</span></h3>`;
+  if(deck.coreSet) html += `<p class="deck-note" style="margin-bottom:10px;">Core Set precon — this box contains all 5 heroes plus one full copy of each of the four aspects, rather than one hero + one aspect per box like later hero packs.</p>`;
+  if(deck.note) html += `<p class="deck-note" style="margin-bottom:10px;">${deck.note}</p>`;
+  html += `<div class="deck-section"><h4>Hero-Specific Cards</h4>${deckListHTML(deck.hero)}</div>`;
+  if(deck.extra){
+    html += `<div class="deck-section"><h4>${deck.extra.label}</h4>${deckListHTML(deck.extra.cards)}</div>`;
+  }
+  if(deck.aspectCards.length){
+    html += `<div class="deck-section"><h4>${deck.aspect} Aspect Cards (in this precon)</h4>${deckListHTML(deck.aspectCards)}</div>`;
+  } else {
+    html += `<div class="deck-section"><h4>${deck.aspect} Aspect Cards</h4><p class="deck-note">Not catalogued yet — coming in a future update.</p></div>`;
+  }
+  if(deck.basics.length){
+    html += `<div class="deck-section"><h4>Basic Cards (in this precon)</h4>${deckListHTML(deck.basics)}</div>`;
+  } else {
+    html += `<div class="deck-section"><h4>Basic Cards</h4><p class="deck-note">Not catalogued yet — coming in a future update.</p></div>`;
+  }
+  if(deck.bonus.length){
+    html += `<div class="deck-section"><h4>Bonus Cards Added to the Shared Pool</h4>${deckListHTML(deck.bonus.map(([n,asp,q])=>[`${n} <span class="muted">(${asp})</span>`,q]))}</div>`;
+  }
+  if(deck.confidence==="partial" && (deck.aspectCards.length || deck.basics.length)){
+    html += `<p class="deck-note">Hero-specific card counts are verified. Aspect/basic card counts for this hero haven't been confirmed yet — quantities shown as "—" until verified against the printed pack.</p>`;
+  }
+  holder.innerHTML = html;
+}
+populateDeckPicker();
+
+const logDifficultySel = document.getElementById("logDifficulty");
+const heroicLevelWrap = document.getElementById("heroicLevelWrap");
+logDifficultySel.addEventListener("change",()=>{
+  heroicLevelWrap.style.display = (logDifficultySel.value==="Heroic") ? "" : "none";
+});
+
 document.getElementById("saveLogBtn").addEventListener("click",()=>{
   const heroId = document.getElementById("logHero").value;
   const scenId = document.getElementById("logScenario").value;
   const difficulty = document.getElementById("logDifficulty").value;
+  const heroicLevel = difficulty==="Heroic" ? (parseInt(document.getElementById("logHeroicLevel").value,10)||1) : null;
   const deck = document.getElementById("logDeck").value;
   const result = document.getElementById("logResult").value;
   const attempts = parseInt(document.getElementById("logAttempts").value,10) || 1;
@@ -809,16 +971,25 @@ document.getElementById("saveLogBtn").addEventListener("click",()=>{
   const date = document.getElementById("logDate").value || new Date().toISOString().slice(0,10);
   const apply = document.getElementById("logApplyMatrix").checked;
 
-  const entry = { id: "e"+Date.now(), date, heroId, scenarioId:scenId, difficulty, deck, result, attempts, notes, ts: Date.now() };
+  const entry = { id: "e"+Date.now(), date, heroId, scenarioId:scenId, difficulty, heroicLevel, deck, result, attempts, notes, ts: Date.now() };
   STATE.log.unshift(entry);
 
   if(apply){
-    STATE.matrix[matrixKey(heroId,scenId)] = result;
+    const key = matrixKey(heroId,scenId);
+    // Once a Win is recorded for a hero/scenario pairing, later log entries
+    // for that same pairing no longer overwrite the matrix cell.
+    if(STATE.matrix[key] !== "W"){
+      STATE.matrix[key] = result;
+    }
     STATE.scenarioUnlocked[scenId] = true;
     if(scenId === "klaw"){
       const b = heroBench(heroId);
       if(difficulty==="Standard" && deck==="Precon") b.preconStd = true;
-      if(difficulty==="Expert" && deck==="Precon") b.preconExp = true;
+      if(difficulty==="Expert" && deck==="Precon"){
+        b.preconExp = true;
+        // An Expert precon win implies the Standard precon step would clear too.
+        if(result==="W") b.preconStd = true;
+      }
       if(difficulty==="Expert" && deck==="Custom") b.customExp = true;
     }
   }
@@ -848,7 +1019,7 @@ function renderLog(){
           <button class="del" data-del="${e.id}">✕</button>
         </div>
       </div>
-      <div class="meta">${e.date} · ${e.difficulty} · ${e.deck} deck · ${e.attempts} attempt${e.attempts>1?'s':''}</div>
+      <div class="meta">${e.date} · ${formatDifficulty(e)} · ${e.deck} deck · ${e.attempts} attempt${e.attempts>1?'s':''}</div>
       ${e.notes ? `<div class="notes">${e.notes}</div>` : ""}
     </div>`;
   }).join("");
