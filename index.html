@@ -153,6 +153,43 @@ table.matrix tbody tr:nth-child(even) th{background:#252732;}
 .deck-empty{text-align:center;padding:30px 10px;color:var(--muted);font-size:13px;}
 .deck-note{font-size:11.5px;color:var(--muted);font-style:italic;margin-top:6px;}
 
+.deck-subtabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.deck-subtab{background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;}
+.deck-subtab.active{background:var(--red);color:#fff;border-color:var(--red);}
+.deck-subview{display:none;}
+.deck-subview.active{display:block;}
+
+.deck-card-item{background:var(--panel2);border-radius:10px;padding:12px;margin-bottom:10px;}
+.deck-card-item .dtop{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;}
+.deck-card-item .dname{font-weight:700;color:#fff;font-size:14px;}
+.deck-card-item .dmeta{color:var(--muted);font-size:11px;margin-top:2px;}
+.deck-card-item .dactions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.status-pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+.status-pill.playable{background:var(--green);color:#fff;}
+.status-pill.draft{background:var(--amber);color:#101010;}
+.status-pill.locked{background:var(--blue);color:#fff;}
+.status-pill.archived{background:var(--gray);color:#fff;}
+
+.card-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px;gap:10px;}
+.card-row .cn{flex:1;color:var(--text);min-width:0;}
+.card-row .cmax{color:var(--muted);font-size:10.5px;}
+.stepper{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+.stepper button{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:#00000040;color:#fff;font-size:15px;font-weight:800;}
+.stepper button:disabled{opacity:.3;}
+.stepper .sval{min-width:16px;text-align:center;font-weight:700;color:#fff;}
+.qtybtns{display:flex;align-items:center;gap:4px;flex:0 0 auto;}
+.qtybtns button{min-width:26px;height:26px;padding:0 4px;border-radius:6px;border:1px solid var(--border);background:#00000040;color:#fff;font-size:12.5px;font-weight:700;}
+.qtybtns button.active{background:var(--red);border-color:var(--red);color:#fff;}
+.qtybtns button.remove{width:auto;padding:0 8px;font-size:11px;}
+
+.legality-box{border-radius:10px;padding:10px 12px;margin:12px 0;font-size:12.5px;}
+.legality-box.legal{background:#0f2c1c;border:1px solid var(--green);}
+.legality-box.draft{background:#2c2410;border:1px solid var(--amber);}
+.legality-box ul{margin:6px 0 0;padding-left:18px;}
+
+.locked-note{background:#00000030;border:1px dashed var(--border);border-radius:8px;padding:8px 10px;font-size:11.5px;color:var(--muted);margin-bottom:10px;}
+.deck-editor-section h4{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 6px;}
+
 /* Guide */
 .guide-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;}
 .guide-table th,.guide-table td{border:1px solid var(--border);padding:8px;text-align:left;vertical-align:top;}
@@ -285,6 +322,10 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
           <input type="number" id="logHeroicLevel" min="1" max="10" value="1">
           <p class="muted" style="margin:4px 0 0;">Heroic level is chosen per game — no fixed cap. (Note: Expert III hasn't been released by FFG yet, so it isn't listed.)</p>
         </div>
+        <div class="full" id="savedDeckWrap" style="display:none;">
+          <label>Saved Deck</label>
+          <select id="logSavedDeck"></select>
+        </div>
         <div class="full">
           <label>Scenario / Villain</label>
           <select id="logScenario"></select>
@@ -317,10 +358,29 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
   <!-- DECKS -->
   <section id="view-decks" class="view">
     <div class="card">
-      <h2>Precon Decks</h2>
-      <p class="muted">Browse each hero's preconstructed deck as it ships in the box, plus the bonus non-signature cards the pack adds to the shared card pool. Source: MarvelCDB. Being filled in gradually — heroes not listed yet are coming in a future update.</p>
-      <select class="deck-picker" id="deckPicker"></select>
-      <div id="deckDetail"></div>
+      <div class="deck-subtabs">
+        <button class="deck-subtab active" data-decktab="mydecks">My Decks</button>
+        <button class="deck-subtab" data-decktab="presets">Aspect Presets</button>
+        <button class="deck-subtab" data-decktab="precon">Preconstructed</button>
+      </div>
+
+      <div id="deckSubview-mydecks" class="deck-subview active">
+        <p class="muted">Build and save legal hero decks. A deck can be freely edited until it's used in a logged play — after that it locks, and editing creates a new version instead so old plays stay reproducible. Deckbuilding currently covers the <span id="deckbuildableCount">—</span> heroes we have full card data for; more will unlock as card data is added.</p>
+        <button class="big-btn" id="newDeckBtn">+ New Deck</button>
+        <div id="myDecksList"></div>
+      </div>
+
+      <div id="deckSubview-presets" class="deck-subview">
+        <p class="muted">An Aspect Preset is a reusable aspect + basic card package — not itself a hero deck. Attach a preset to a hero to instantly create a new independent deck from it.</p>
+        <button class="big-btn" id="newPresetBtn">+ New Aspect Preset</button>
+        <div id="presetsList"></div>
+      </div>
+
+      <div id="deckSubview-precon" class="deck-subview">
+        <p class="muted">Browse each hero's preconstructed deck as it ships in the box, plus the bonus non-signature cards the pack adds to the shared card pool. Source: MarvelCDB. Being filled in gradually — heroes not listed yet are coming in a future update.</p>
+        <select class="deck-picker" id="deckPicker"></select>
+        <div id="deckDetail"></div>
+      </div>
     </div>
   </section>
 
@@ -579,17 +639,17 @@ const DECKS = {
  aspectCards:[["Agent Coulson",1],["Quake",1],["Stealth Strike",3],["The Power of Justice",2],["Interrogation Room",2],["Surveillance Team",2],["Counterintelligence",3],["Spycraft",3]],
  basics:[["Nick Fury",1],["Energy",1],["Genius",1],["Strength",1],["Quincarrier",1],["Target Acquired",3]],
  bonus:[["Counterattack","Aggression",3],["Rapid Response","Leadership",3],["Defensive Stance","Protection",3],["Espionage","Basic",3]]},
-"doctorstrange":{aspect:"Protection",confidence:"partial",
+"doctorstrange":{aspect:"Protection",confidence:"exact",
  hero:[["Wong",1],["Astral Projection",2],["Magic Blast",2],["Master of the Mystic Arts",2],["Mystical Studies",1],["Protective Ward",2],["Sanctum Sanctorum",1],["Cloak of Levitation",1],["Magical Enhancements",2],["The Eye of Agamotto",1]],
  extra:{label:"Invocation subset (optional, 1 copy each)",cards:[["Crimson Bands of Cyttorak",1],["Images of Ikonn",1],["Seven Rings of Raggadorr",1],["Vapors of Valtorr",1],["Winds of Watoomb",1]]},
- aspectCards:[["Brother Voodoo",null],["Clea",null],["Iron Fist",null],["Desperate Defense",null],["Momentum Shift",null],["The Power of Protection",null],["Med Team",null],["The Night Nurse",null],["Unflappable",null]],
- basics:[["Warning",null],["Energy",null],["Genius",null],["Strength",null],["Avengers Mansion",null],["The Sorcerer Supreme",null]],
- bonus:[["Skilled Strike","Aggression",null],["Foiled!","Justice",null],["Iron Man","Leadership",null]]},
-"hulk":{aspect:"Aggression",confidence:"partial",
+ aspectCards:[["Brother Voodoo",1],["Clea",1],["Iron Fist",1],["Desperate Defense",3],["Momentum Shift",3],["The Power of Protection",2],["Med Team",2],["The Night Nurse",1],["Unflappable",3]],
+ basics:[["Warning",3],["Energy",1],["Genius",1],["Strength",1],["Avengers Mansion",3],["The Sorcerer Supreme",1]],
+ bonus:[["Skilled Strike","Aggression",3],["Foiled!","Justice",3],["Iron Man","Leadership",1]]},
+"hulk":{aspect:"Aggression",confidence:"exact",
  hero:[["Crushing Blow",2],["Hulk Smash",2],["Sub-Orbital Leap",2],["Thunderclap",2],["Unstoppable Force",2],["Limitless Strength",2],["Banner's Laboratory",1],["Boundless Rage",1],["Immovable Object",1]],
- aspectCards:[["Brawn",null],["Sentry",null],["She-Hulk",null],["Drop Kick",null],["Toe to Toe",null],["\"You'll Pay for That!\"",null],["The Power of Aggression",null],["Martial Prowess",null]],
- basics:[["To the Rescue!",null],["Energy",null],["Genius",null],["Strength",null],["Avengers Mansion",null],["Helicarrier",null],["Resourceful",null]],
- bonus:[["Beat Cop","Justice",null],["Inspiring Presence","Leadership",null],["Electrostatic Armor","Protection",null]]},
+ aspectCards:[["Brawn",1],["Sentry",1],["She-Hulk",1],["Drop Kick",3],["Toe to Toe",3],["\"You'll Pay for That!\"",3],["The Power of Aggression",2],["Martial Prowess",3]],
+ basics:[["To the Rescue!",3],["Energy",1],["Genius",1],["Strength",1],["Avengers Mansion",3],["Helicarrier",3],["Resourceful",3]],
+ bonus:[["Beat Cop","Justice",3],["Inspiring Presence","Leadership",3],["Electrostatic Armor","Protection",3]]},
 "spiderman-peter":{aspect:"Justice",confidence:"partial",coreSet:true,
  hero:[["Black Cat",1],["Backflip",2],["Enhanced Spider-Sense",2],["Swinging Web Kick",3],["Aunt May",1],["Spider-Tracer",2],["Web-Shooter",2],["Webbed Up",2]],
  aspectCards:[],basics:[],bonus:[]},
@@ -605,8 +665,413 @@ const DECKS = {
  note:"Shares the Aggression aspect with She-Hulk — the Core Set box only contains enough Aggression cards to build one of these two precons at a time."},
 "blackpanther-tchalla":{aspect:"Protection",confidence:"partial",coreSet:true,
  hero:[["Shuri",1],["Ancestral Knowledge",1],["Wakanda Forever!",4],["Vibranium",3],["The Golden City",1],["Energy Daggers",1],["Panther Claws",1],["Tactical Genius",1],["Vibranium Suit",1]],
- aspectCards:[],basics:[],bonus:[]}
+ aspectCards:[],basics:[],bonus:[]},
+"antman":{aspect:"Leadership",confidence:"exact",
+ hero:[["Wasp: Nadia Van Dyne",1],["Giant Stomp",2],["Hive Mind",1],["Resize",2],["Pym Particles",2],["Army of Ants",3],["Ant-Man's Helmet",1],["Giant Strength",2],["Wrist Gauntlets",1]],
+ aspectCards:[["Ant-Man: Hank Pym",1],["Giant-Man",1],["Ronin",1],["Stinger: Cassie Lang",1],["Call for Aid",3],["Moxie",3],["Power Gloves",3],["Reinforced Suit",3]],
+ basics:[["First Aid",3],["Swarm Tactics",1],["Energy",1],["Genius",1],["Strength",1],["Team-Building Exercise",3]],
+ bonus:[["Moment of Triumph","Aggression",3],["Lay Down the Law","Justice",3],["Muster Courage","Protection",3],["Assess the Situation","Basic",3]]},
+"wasp":{aspect:"Aggression",confidence:"exact",
+ hero:[["Ant-Man: Scott Lang",1],["Giant Help",2],["Pinpoint Strike",3],["Rapid Growth",2],["Wasp Sting",2],["Pym Particles",2],["Red Room Training",1],["Bio-Synthetic Wings",1],["Wasp's Helmet",1]],
+ aspectCards:[["Thor: Jane Foster",1],["Wasp: Janet Van Dyne",1],["Into the Fray",3],["Surprise Attack",3],["The Power of Aggression",2],["Boot Camp",3],["Lie in Wait",3]],
+ basics:[["Ironheart",1],["Spider-Man: Miles Morales",1],["Swarm Tactics",1],["Energy",1],["Genius",1],["Strength",1],["The Power in All of Us",2],["Quincarrier",1]],
+ bonus:[["Running Interference","Justice",3],["All for One","Leadership",3],["Perseverance","Protection",3],["Athletic Conditioning","Basic",3]]},
+"quicksilver":{aspect:"Protection",confidence:"exact",
+ hero:[["Scarlet Witch: Wanda Maximoff",1],["Always Be Running",4],["Double Time",2],["Maximum Velocity",2],["Speed Cyclone",1],["Serval Industries",1],["Accelerated Reflex",1],["Friction Resistance",1],["Hyper Perception",1],["Reinforced Sinew",1]],
+ aspectCards:[["Multiple Man",3],["Warlock",1],["Never Back Down",3],["Side Step",3],["Armored Vest",3],["Nerves of Steel",3]],
+ basics:[["Order and Chaos",1],["Energy",1],["Genius",1],["Strength",1],["Adrenaline Rush",3],["Civic Duty",3]],
+ bonus:[["Brute Force","Aggression",3],["Sense of Justice","Justice",3],["United We Stand","Leadership",3],["Beat 'Em Up","Basic",3]]},
+"scarletwitch":{aspect:"Justice",confidence:"exact",
+ hero:[["Quicksilver: Pietro Maximoff",1],["Chaos Magic",1],["Hex Bolt",4],["Molecular Decay",3],["Warp Reality",1],["Agatha Harkness",1],["Magic Shield",3],["Scarlet Witch's Crest",1]],
+ aspectCards:[["Speed: Thomas Shepherd",1],["Wiccan: William Kaplan",1],["Crisis Averted",3],["Multitasking",3],["Swift Retribution",3],["Turn the Tide",3],["The Power of Justice",2],["Heroic Intuition",3]],
+ basics:[["Order and Chaos",1],["Spiritual Meditation",3],["Energy",1],["Genius",1],["Strength",1]],
+ bonus:[["Browbeat","Aggression",3],["Last Stand","Leadership",3],["Bait and Switch","Protection",3],["Recuperation","Basic",3]]},
+"starlord":{aspect:"Leadership",confidence:"exact",
+ hero:[["Nova Prime: Richard Rider",1],["Daring Escape",3],["Gutsy Move",2],["Sliding Shot",3],["Bad Boy",1],["Element Gun",2],["Jet Boots",1],["Leader of the Guardians",1],["Star-Lord's Helmet",1]],
+ aspectCards:[["Adam Warlock",1],["Beta Ray Bill",1],["Yondu",1],["Air Supremacy",3],["Blaze of Glory",3],["Get Ready",3],["Target Practice",3],["The Power of Leadership",2],["Laser Blaster",3]],
+ basics:[["Cosmo",1],["C.I.T.T.",1],["Knowhere",1],["Pulse Grenade",3],["Enhanced Awareness",3]],
+ bonus:[["Dive Bomb","Aggression",3],["Agile Flight","Justice",3],["Ever Vigilant","Protection",3]]},
+"gamora":{aspect:"Aggression",confidence:"exact",
+ hero:[["Nebula",1],["Acrobatic Move",2],["Crosscounter",2],["Set the Pace",2],["Decisive Blow",2],["Forward Momentum",2],["Conditioning Room",1],["Keen Instincts",2],["Gamora's Sword",1]],
+ aspectCards:[["Angela",1],["Clobber",3],["Plan of Attack",3],["Uppercut",3],["Combat Training",3],["Godslayer",1]],
+ basics:[["Drax",1],["Hit and Run",3],["Energy",1],["Genius",1],["Strength",1],["Enhanced Reflexes",3]],
+ bonus:[["First Hit","Protection",3],["True Grit","Protection",3],["Impede","Justice",3],["Pivotal Moment","Justice",3],["Comms Implant","Leadership",3]]},
+"drax":{aspect:"Protection",confidence:"exact",
+ hero:[["Mantis",1],["\"Fight Me, Coward!\"",2],["Intimidation",2],["Knife Leap",2],["Parry",2],["Payback",2],["Drax's Knife",1],["Drax's Other Knife",1],["DWI Theet Mastery",1],["Too Stubborn to Die",1]],
+ aspectCards:[["Martyr: Phyla-Vell",1],["Moondragon: Heather Douglas",1],["Counter-Punch",3],["Deflection",3],["Hard Knocks",3],["Leading Blow",3],["Subdue",3],["Indomitable",3]],
+ basics:[["Gamora",1],["Athletic Conditioning",3],["Energy",1],["Genius",1],["Strength",1],["Enhanced Physique",3]],
+ bonus:[["\"Bring It!\"","Aggression",3],["\"Think Fast!\"","Justice",3],["Regroup","Leadership",3]]},
+"venom-hero":{aspect:"Justice",confidence:"exact",
+ hero:[["Behind Enemy Lines",2],["Grasping Tendrils",2],["Locked and Loaded",1],["Run and Gun",3],["Savage Attack",2],["Project Rebirth 2.0",1],["Multi-Gun",1],["Spider-Sense",1],["Venom's Pistol",2]],
+ aspectCards:[["Jack Flag",1],["Scare Tactic",3],["Making an Entrance",3],["The Power of Justice",2],["Sonic Rifle",3]],
+ basics:[["Star-Lord",1],["Energy",1],["Genius",1],["Strength",1],["Resourceful",3],["Side Holster",3],["Plasma Pistol",3],["Crew Quarters",3]],
+ bonus:[["Fusillade","Aggression",3],["\"Welcome Aboard\"","Leadership",3],["Shake it Off","Protection",3]]},
+"nebula-hero":{aspect:"Justice",confidence:"exact",
+ hero:[["Gamora",1],["Nebula's Ship",1],["Cutthroat Ambition",2],["Evasive Maneuvering",1],["Unyielding Persistence",1],["Weapons Master",2],["Wide Stance",2],["Combat Ready",2],["Lethal Intent",3]],
+ aspectCards:[["Eros",1],["Wraith",1],["Venom: Flash Thompson",1],["Justice Served",3],["One Way or Another",3],["Determination",1],["The Power of Justice",2],["Brains Over Brawn",3],["Heroic Intuition",3]],
+ basics:[["Cosmo",1],["Knowhere",1],["Daughters of Thanos",1],["First Aid",3],["Energy",1],["Genius",1],["Strength",1],["Honorary Guardian",3]],
+ bonus:[["Energy Spear","Aggression",3],["Guardians of the Galaxy","Leadership",3],["Defensive Training","Protection",2]]},
+"warmachine":{aspect:"Leadership",confidence:"exact",
+ hero:[["Iron Man: Tony Stark",1],["Munitions Bunker",1],["Upgraded Chassis",1],["Gauntlet Gun",2],["Missile Launcher",1],["Shoulder Cannon",1],["Repulsor Beam",2],["Targeted Strike",2],["Scorched Earth",2],["Full Auto",2]],
+ aspectCards:[["Black Panther",1],["Captain Marvel",1],["Falcon",1],["Goliath",1],["Command Team",3],["Sneak Attack",3],["Save the Day",3],["Go Down Swinging",3],["Make the Call",3],["Innovation",1]],
+ basics:[["Mockingbird",1],["Quincarrier",1],["Two Against the World",1],["Energy",1],["Genius",1],["Strength",1],["Sidearm",3]],
+ bonus:[["As One!","Aggression",3],["Vigilante Training","Justice",2],["Stand Together","Protection",3]]},
+"vision":{aspect:"Protection",confidence:"exact",
+ hero:[["Intangible",1],["Vivian",1],["616 Hickory Branch Lane",1],["Solar Gem",1],["Vision's Cape",1],["Density Control",2],["Solar Beam",3],["Superdense Strike",2],["Just Passing Through",2],["Phase Disruption",1],["Mass Increase",1]],
+ aspectCards:[["Jocasta",1],["Protector",1],["Victor Mancha",1],["Flow Like Water",3],["Indomitable",3],["Defiance",3],["Side Step",3],["Get Behind Me!",3],["Preservation",1]],
+ basics:[["Machine Man",1],["Avengers Mansion",3],["Reboot",3],["Energy",1],["Genius",1],["Strength",1],["Meditation",3]],
+ bonus:[["Assault Training","Aggression",2],["Chance Encounter","Justice",3],["Joining Forces","Leadership",3]]},
+"valkyrie":{aspect:"Aggression",confidence:"exact",
+ hero:[["Death-Glow",1],["Annabelle Riggs",1],["Valhalla",1],["Valkyrie's Spear",1],["Dragonfang",1],["Aragorn",1],["Flight of the Valkyrior",2],["Visit Valhalla",1],["Chooser of the Slain",2],["Shieldmaiden",2],["Have at Thee!",3]],
+ aspectCards:[["Thor: Odinson",1],["Throg",1],["Angela",1],["Hall of Heroes",1],["Combat Training",3],["Quick Strike",3],["Smash the Problem",3],["The Best Defense…",3],["Audacity",1],["The Power of Aggression",2]],
+ basics:[["The Bifrost",1],["Godlike Stamina",3],["Energy",1],["Genius",1],["Strength",1],["Cosmic Alliance",3]],
+ bonus:[["Problem Solvers","Justice",3],["Leadership Training","Leadership",2],["Anticipation","Protection",3]]},
+"nova":{aspect:"Aggression",confidence:"exact",
+ hero:[["Ms. Marvel: Kamala Khan",1],["Forcefield Projection",2],["Lightspeed Flight",3],["Pot Shot",3],["Unleash Nova Force",2],["Connection to the Worldmind",2],["Jesse Alexander",1],["Supernova Helmet",1]],
+ aspectCards:[["The Locust",1],["Chase Them Down",3],["Pitchback",3],["No Quarter",3],["One by One",3],["The Power of Aggression",2],["Fluid Motion",3],["Honed Technique",3]],
+ basics:[["Moon Girl",1],["Everyday Hero",3],["Champions Mobile Bunker",1]],
+ bonus:[["Yaw and Roll","Justice",3],["Height Advantage","Protection",3]]},
+"ironheart":{aspect:"Leadership",confidence:"exact",
+ hero:[["Brawn: Amadeus Cho",1],["Fly Over",2],["Photon Beam",3],["New and Improved",2],["Sector Scan",1],["Stroke of Genius",2],["Ronnie Williams",1],["Tony Stark A.I.",1],["Photon Blasters",1],["Propulsion Jets",1]],
+ aspectCards:[["Cloud 9",1],["Falcon: Joaquin Torres",1],["Patriot",1],["Go All Out",3],["Push Ahead",3],["Morale Boost",3],["R&D Facility",3],["The Power of Leadership",2]],
+ basics:[["Agent 13",1],["Snowguard",1],["Vivian",1],["\"Go for Champions!\"",1],["Helicarrier",3],["Ingenuity",3]],
+ bonus:[["Bombshell","Aggression",1],["Wasp: Nadia Van Dyne","Justice",1],["Pinpoint","Protection",1]]},
+"spiderham":{aspect:"Justice",confidence:"exact",
+ hero:[["Captain Americat: Steve Mouser",1],["Ham It Up",2],["Hogwashed",1],["\"I Don't Think So!\"",1],["Petulant Pig",2],["Swinging Web Pig",3],["The Daily Beagle",1],["Cartoon Physics",2],["Huge Wooden Hammer",1],["Organic Webbing",1]],
+ aspectCards:[["Lady Spider",1],["Spider-Man: Pavitr Prabhakar",1],["Even the Odds",3],["Great Responsibility",3],["Making an Entrance",3],["One Way or Another",3],["Followed",3],["Overwatch",3]],
+ basics:[["Scarlet Spider",1],["SP//dr: Peni Parker",1],["Team-Building Exercise",3],["Web of Life and Destiny",1],["Warrior of the Great Web",3]],
+ bonus:[]},
+"spdr":{aspect:"Protection",confidence:"exact",
+ hero:[["VEN#m: Addy Brock",1],["All Systems Go!",3],["Rapid Deployment",2],["Web-Trap",2],["Aunt May & Uncle Ben",1],["Ejection Protocol",1],["SP//dr Command",1],["Host Spider",1],["Psychic Link",1],["Speed-Metal Alloy",1],["Web-Fluid Compressor",1]],
+ aspectCards:[["Daredevil",1],["Spider-Man Noir",1],["Repurpose",3],["Thwip Thwip!",3],["Energy Barrier",3],["Forcefield Generator",3],["Spider-Tingle",3]],
+ basics:[["Spider-Ham: Peter Porker",1],["Spider-Man: Otto Octavius",1],["Limitless Stamina",3],["Unshakable",3]],
+ bonus:[["Clarity of Purpose","Leadership",3]]},
+"hawkeye":{aspect:"Leadership",confidence:"exact",
+ hero:[["Hawkeye's Bow",1],["Hawkeye's Quiver",1],["Mockingbird",1],["Sonic Arrow",2],["Explosive Arrow",2],["Electric Arrow",2],["Cable Arrow",2],["Vibranium Arrow",2],["Expert Marksman",2]],
+ aspectCards:[["Hawkeye",1],["Black Knight",1],["Goliath",1],["U.S. Agent",1],["Sky Cycle",3],["Team Training",3],["Ready for Action",3],["Lead from the Front",2],["The Power of Leadership",2]],
+ basics:[["War Machine",1],["Avengers Tower",1],["Earth's Mightiest Heroes",3]],
+ bonus:[]},
+"spiderwoman":{aspect:"Aggression",confidence:"exact",note:"Spider-Woman is a dual-aspect hero (Aggression + Justice). Her signature kit is fixed; her 10 pool contributions (5 Aggression + 5 Justice) are listed via bonus since she has no single home aspect.",
+ hero:[["Captain Marvel",1],["Finesse",2],["Jessica Drew's Apartment",1],["Venom Blast",2],["Pheromones",2],["Contaminant Immunity",2],["Inconspicuous",2],["Self-Propelled Glide",3]],
+ aspectCards:[],
+ basics:[],
+ bonus:[["Spider-Girl","Aggression",1],["Combat Training","Aggression",2],["Tac Team","Aggression",2],["Press the Advantage","Aggression",3],["Piercing Strike","Aggression",3],["Spider-Man","Justice",1],["Heroic Intuition","Justice",2],["Skilled Investigator","Justice",3],["Interrogation Room","Justice",2],["Clear the Area","Justice",3]]},
+"rocketraccoon":{aspect:"Aggression",confidence:"exact",
+ hero:[["I've Got a Plan",2],["Reload",2],["Schadenfreude",1],["Salvage",2],["Battery Pack",2],["Cybernetic Skeleton",1],["Particle Cannon",1],["Rocket Launcher",1],["Rocket's Pistol",2],["Thruster Boots",1]],
+ aspectCards:[["Bug",1],["Chase Them Down",2],["Into the Fray",3],["Looking for Trouble",3],["Relentless Assault",2],["Follow Through",3],["Hand Cannon",3]],
+ basics:[["Groot",1],["Booster Boots",3]],
+ bonus:[]},
+"groot":{aspect:"Protection",confidence:"exact",
+ hero:[["Fruition",2],["\"I am Groot\"",2],["\"I. AM. GROOT!\"",2],["Root Stomp",3],["\"We Are Groot\"",1],["Fertile Ground",1],["Entangling Vines",1],["Lashing Vines",1],["Vine Shield",1],["Vine Spikes",1]],
+ aspectCards:[["Starhawk",1],["Desperate Defense",3],["Fighting Fit",3],["The Power of Protection",2],["Dauntless",3],["Hard to Ignore",3],["Indomitable",2]],
+ basics:[["Rocket Raccoon",1],["Flora and Fauna",1],["Deft Focus",3]],
+ bonus:[]},
+"adamwarlock":{aspect:"Aggression",confidence:"exact",note:"Adam Warlock is a 'Pool' hero who contributes cards to all four aspects (6 each; Protection's 6th card is unconfirmed from source data). Listed via bonus since he has no single home aspect.",
+ hero:[["Pip the Troll",1],["Soul World",1],["Karmic Staff",1],["Warlock's Cape",1],["Cosmic Ward",2],["Mystic Senses",2],["Karmic Blast",3],["Cosmic Awareness",2],["Quantum Magic",2]],
+ aspectCards:[],
+ basics:[],
+ bonus:[["Marvel Boy","Aggression",1],["In-Betweener","Aggression",1],["Magic Attack","Aggression",1],["Uppercut","Aggression",1],["Combat Training","Aggression",1],["Audacity","Aggression",1],["Quasar","Justice",1],["Living Tribunal","Justice",1],["For Justice!","Justice",1],["Zone of Silence","Justice",1],["Heroic Intuition","Justice",1],["Determination","Justice",1],["Major Victory","Leadership",1],["Eternity","Leadership",1],["Summoning Spell","Leadership",1],["Make the Call","Leadership",1],["Inspired","Leadership",1],["Innovation","Leadership",1],["Charlie-27","Protection",1],["The Gardener","Protection",1],["Shield Spell","Protection",1],["Counter-Punch","Protection",1],["Armored Vest","Protection",1]]},
+"spectrum":{aspect:"Leadership",confidence:"exact",
+ hero:[["Gamma",1],["Photon",1],["Pulsar",1],["Blue Marvel",1],["Energy Duplication",2],["Gamma Blast",3],["Photon Speed",3],["Pulsar Shield",3],["Speed of Light",3]],
+ aspectCards:[["Captain America",1],["Power Man",1],["White Tiger",1],["Kaluu",1],["Mighty Avengers",3],["Mass Attack",3],["Moxie",3],["Band Together",3]],
+ basics:[["Blade",1],["Avengers Tower",1],["Avengers Mansion",1],["Ready to Rumble",3]],
+ bonus:[]},
+"ghostspider":{aspect:"Protection",confidence:"exact",
+ hero:[["Ghost Kick",3],["Parental Guidance",1],["Phantom Flip",3],["Pirouette and Punch",2],["Web Binding",2],["George Stacy",1],["Ticket to the Multiverse",1],["Web-Bracelet",2]],
+ aspectCards:[["Silk",1],["Spider-Man",1],["Spider-UK",1],["Bait and Switch",3],["Jump Flip",3],["Return the Favor",3],["What Doesn't Kill Me",3]],
+ basics:[["Spider-Man",1],["Across the Spider-Verse",1],["Young Love",1],["Web of Life and Destiny",1],["Plan B",3]],
+ bonus:[]},
+"spiderman-miles":{aspect:"Justice",confidence:"exact",
+ hero:[["Arachnobatics",2],["Double Life",2],["Swing In",2],["Web-Shot",3],["Ganke Lee",1],["Jefferson Davis",1],["Power Within",1],["Defense Mechanism",1],["Web-Shooter",2]],
+ aspectCards:[["Monica Chang",1],["Spider-Woman",1],["Homeland Intervention",3],["Global Logistics",3],["Field Agent",3],["Surveillance Team",2]],
+ basics:[["Agent 13",1],["Dum Dum Dugan",1],["Ghost-Spider",1],["Government Liaison",3],["Sky-Destroyer",1]],
+ bonus:[]},
+"shadowcat":{aspect:"Aggression",confidence:"exact",
+ hero:[["Solid",1],["Lockheed",1],["Kitty's Room",1],["Acute Control",1],["Intangible Interference",1],["Phased and Confused",2],["Shadowcat Surprise",3],["Phase Strike",2],["Airwalk",2],["Quick Shift",2]],
+ aspectCards:[["Wolverine",1],["Magik",1],["Attack Training",3],["Gatekeeper",3],["Team Strike",3],["Toe to Toe",3],["Aggressive Energy",2]],
+ basics:[["Colossus",1],["X-Mansion",1],["Ready to Rumble",3]],
+ bonus:[]},
+"colossus":{aspect:"Protection",confidence:"exact",
+ hero:[["Shadowcat",1],["Piotr's Studio",1],["Iron Will",1],["Titanium Muscles",1],["Organic Steel",2],["Made of Rage",2],["Steel Fist",3],["Bulletproof Protector",2],["Armor Up",2]],
+ aspectCards:[["Nightcrawler",1],["Polaris",1],["Protective Training",3],["Powerful Punch",3],["Bait and Switch",3],["Perseverance",3],["Mutant Protectors",3],["Defensive Energy",2]],
+ basics:[["Professor X",1],["The X-Jet",1],["Shadow and Steel",1]],
+ bonus:[]},
+"cyclops":{aspect:"Leadership",confidence:"exact",
+ hero:[["Phoenix",1],["Ruby Quartz Visor",1],["Field Commander",1],["Exploit Weakness",2],["Practiced Defense",2],["Priority Target",2],["Full Blast",1],["Ricochet Beam",2],["Tactical Brilliance",3]],
+ aspectCards:[["Beast",1],["Danger Room Training",3],["Coordinated Attack",3],["Teamwork",3],["Effective Leadership",2]],
+ basics:[["Angel",1],["Utopia",1],["Danger Room",1],["Game Time",3],["Psychic Rapport",1],["Honorary X-Men",3]],
+ bonus:[["Dust","Aggression",1],["Rockslide","Protection",1],["Blindfold","Justice",1],["Marked","Aggression",3],["Befuddle","Justice",3],["Pinned Down","Protection",3]]},
+"phoenix":{aspect:"Justice",confidence:"exact",
+ hero:[["Phoenix Force",1],["Cyclops",1],["White Hot Room",1],["Phoenix Suit",1],["Rise from the Ashes",1],["Telekinetic Shield",1],["Mental Paralysis",1],["Mind Control",1],["Telekinetic Attack",2],["Psychic Blast",2],["Telepathic Trickery",2],["Phoenix Firebird",2]],
+ aspectCards:[["Banshee",1],["Marvel Girl",1],["Mission Training",3],["Psychic Manipulation",3],["Mutant Peacekeepers",3],["Swift Retribution",3],["Passion for Justice",2]],
+ basics:[["Storm",1],["Cerebro",1],["Psychic Rapport",1],["Down Time",3]],
+ bonus:[["Psychic Assault","Aggression",3],["Psychic Misdirection","Protection",3],["Psychic Kicker","Leadership",3],["Soul Sisters","Basic",1]]},
+"wolverine":{aspect:"Aggression",confidence:"exact",
+ hero:[["Wolverine's Claws",1],["Jubilee",1],["Adamantium Skeleton",1],["Berserker Frenzy",1],["\"I Got Better\"",1],["Logan's Cabin",1],["Berserker Barrage",2],["Slice and Dice",2],["Lunging Strike",2],["Track by Scent",2],["Regenerative Healing",2]],
+ aspectCards:[["Psylocke",1],["Sunfire",1],["Battle Fury",3],["Warrior Skill",3],["Outta My Way!",3],["Precision Strike",3],["Mean Swing",3],["Aggressive Energy",2]],
+ basics:[["Colossus",1],["Weapon X",1],["Fastball Special",1],["Longshot",1]],
+ bonus:[["Command Center","Justice",3]]},
+"storm":{aspect:"Leadership",confidence:"exact",
+ hero:[["Clear Skies",1],["Hurricane",1],["Thunderstorm",1],["Blizzard",1],["Storm's Crown",1],["Storm's Cape",1],["Ororo's Garden",1],["Weather Goddess",3],["Torrential Rain",3],["Lightning Bolt",2],["Flash Freeze",2],["Blast of Wind",2]],
+ aspectCards:[["Havok",1],["Mirage",1],["Gentle",1],["Pixie",1],["Uncanny X-Men",3],["Leadership Skill",3],["\"To Me, My X-Men!\"",3],["Effective Leadership",2]],
+ basics:[["Forge",1],["The X-Jet",1],["Utopia",1],["X-Mansion",1],["Endurance",3]],
+ bonus:[["Hangar Bay","Protection",3]]},
+"gambit":{aspect:"Justice",confidence:"exact",
+ hero:[["Rogue",1],["The Thieves Guild",1],["Gambit's Staff",1],["Gambit's Guild Armor",1],["Charged Card",3],["Royal Flush",2],["Natural Agility",2],["Creole Charmer",2],["Molecular Acceleration",2]],
+ aspectCards:[["Bishop",1],["Dazzler",1],["Operative Skill",3],["Stealth Strike",3],["Breaking and Entering",3],["Passion for Justice",2]],
+ basics:[["Professor X",1],["X-Mansion",1],["Beauty and the Thief",1],["Hit and Run",3],["Mutant Education",3],["X-Men Instruction",3]],
+ bonus:[["War Room","Aggression",3]]},
+"rogue":{aspect:"Protection",confidence:"exact",
+ hero:[["Touched",1],["Gambit",1],["Rogue's Jacket",1],["Goin' Rogue",3],["Southern Cross",3],["Energy Transfer",2],["Bulletproof Belle",2],["Superpower Adaptation",3]],
+ aspectCards:[["Iceman",1],["Karma",1],["Armor",1],["Unflappable",3],["Judoka Skill",3],["Preemptive Strike",3],["Not Today!",3],["Defensive Energy",2]],
+ basics:[["Moira MacTaggert",1],["X-Gene",3],["Beauty and the Thief",1]],
+ bonus:[["Med Lab","Leadership",3]]},
+"cable":{aspect:"Leadership",confidence:"exact",
+ hero:[["Bodyslide",1],["Mind Scan",3],["Precognition",1],["Telekinetic Blast",2],["Technovirus Purge",1],["Graymalkin",1],["Professor",1],["Askani'son",1],["Forced Amnesia",1],["Plasma Rifle",1],["Telekinetic Force Field",1],["Temporal Leap",1]],
+ aspectCards:[["Caliban",1],["Fantomex",1],["Sunspot",1],["Mission Planning",3],["Call for Backup",1],["E.V.A.",1],["Uncanny X-Force",3],["Mission Leader",1]],
+ basics:[["Deadpool",1],["Deathlok",1],["Frenemies",1],["Build Support",1],["The Power of the Mind",3],["Psimitar",1],["Sidearm",3]],
+ bonus:[["Lock and Load","Aggression",1],["Establish Perimeter","Protection",1]]},
+"domino":{aspect:"Justice",confidence:"exact",
+ hero:[["Diamondback",1],["Outlaw",1],["A Good Workout",2],["Luck Be a Lady",1],["Right Place, Right Time",2],["Jackpot!",1],["Pip the Pug",1],["The Painted Lady",1],["Domino's Pistol",2],["Lucky and Good",1],["Lucky Break",1],["Probability Field",1]],
+ aspectCards:[["Feral",1],["Wolfsbane",1],["Even the Odds",3],["Team Investigation",3],["Take Out the Guards",1],["Overwatch",3]],
+ basics:[["Atlas Bear",1],["White Fox",1],["The Posse",1]],
+ bonus:[]},
+"psylocke":{aspect:"Justice",confidence:"exact",
+ hero:[["Psi-Knife",2],["Angel",1],["Flurry of Blades",3],["Mental Detection",3],["Psionic Redirect",2],["Telepathic Suggestion",2],["Training Regimen",1],["Martial Arts Training",1],["Psionic Training",1],["Weapons Training",1]],
+ aspectCards:[["Captain Britain",1],["Cypher",1],["Concussive Blow",3],["Upside the Head",3],["Lay the Trap",1],["Float Like a Butterfly",3]],
+ basics:[["Pete Wisdom",1],["Directed Force",3],["Soaring Hearts",1],["The Power of the Mind",3],["IPAC",1],["X-Bunker",1],["Telepathy",3],["Telekinesis",3]],
+ bonus:[["Psi-Bow Attack","Aggression",1],["Domino","Leadership",1],["Psi-Flail Strike","Protection",1]]},
+"angel":{aspect:"Protection",confidence:"exact",
+ hero:[["Psylocke",1],["Adaptive Plumage",2],["Aerial Agility",2],["Metamorphosis",2],["Natural Flight",2],["Razor Dive",2],["Avian Anatomy",2],["Worthington Industries",1],["Techno-Organic Wings",1]],
+ aspectCards:[["Elixir",1],["Siryn",1],["Warpath",1],["Aerial Intervention",3],["Ever Vigilant",3],["Taunt",3],["Render Medical Aid",1],["Angel's Aerie",1],["Containment Strategy",3]],
+ basics:[["Cannonball",1],["Soaring Hearts",1],["The Power of Flight",3],["Soaring Acrobatics",3],["X-Force Recruit",3]],
+ bonus:[["Bombs Away","Aggression",3],["Eyes in the Sky","Justice",3],["Flying Formation","Leadership",3]]},
+"x23":{aspect:"Aggression",confidence:"exact",
+ hero:[["Honey Badger",1],["Animal Instinct",2],["Claw Mastery",3],["Regenerative Longevity",2],["Sisterly Bond",1],["Sisterhood",1],["Adamantium Lacing",1],["Grim Resolve",1],["Pain Tolerance",1],["Puncture Wound",2]],
+ aspectCards:[["Boom Boom",1],["Rictor",1],["Shatterstar",1],["Critical Hit",3],["Moment of Triumph",3],["Keep Them Busy",1],["\"Now I'm Mad\"",3],["The Direct Approach",3]],
+ basics:[["Specialized Training",1],["IPAC",1],["X-Bunker",1],["Endurance",3],["Combat Specialist",1],["Defense Specialist",1],["Front Line Specialist",1],["Surveillance Specialist",1]],
+ bonus:[["Predictable Ploy","Justice",3],["Rally the Troops","Leadership",1],["Anticipated Attack","Protection",3]]},
+"deadpool":{aspect:"Aggression",confidence:"exact",note:"Deadpool's 'Pool' cards are exclusive to him (not shared with any aspect pool), per official deckbuilding rules — all 33 Pool cards are listed directly in his hero card list alongside his 11 signature cards, using their real printed quantities.",
+ hero:[["Cable",1],["Exhausting Personality",1],["Maximum Effort",2],["Metaknowledge",1],["\"Yoo-Hoo!\"",2],["Montage",1],["Chimichanga Truck",1],["Armed to the Teeth",1],["Deadpool's Katana",2],["It Ain't Over...",1],["This Card is Fire",2],["Dogpool",1],["Headpool",1],["Kidpool",1],["Lady Deadpool",1],["Barely a Scratch",3],["Cutupper",1],["Da Bomb",1],["Get Rage-y",1],["\"I Got This\"",3],["Not my Responsibility",1],["'Pool Inspection",1],["Live Dangerously",1],["Self Confidence",1],["Self Control",1],["Self Preservation",1],["Git Gud",1],["Healing Factor",3],["Stick-To-Itiveness",1],["Bob, Agent of Hydra",1],["Negasonic Teenage Warhead",1],["Pandapool",1],["Break Time",1],["Get in Front of Me!",1],["Mulligan",3],["Deadpool Corps Ship",1],["Plot Convenience",1],["Ambush",3],["Bazooka",2],["Blackout",1],["Distraction",3],["Laser Swords",1],["Rock, Paper, Scissors",1],["Tic-Tac-Toe",1],["War",1]],
+ aspectCards:[],
+ basics:[["Frenemies",1]],
+ bonus:[]},
+"bishop":{aspect:"Leadership",confidence:"exact",
+ hero:[["Malcolm",1],["Randall",1],["Bishop's Rifle",1],["Bishop's Uniform",1],["Super-Charged",2],["Concussive Blast",2],["Command Authority",2],["Energy Conversion",2],["Stored Energy",3]],
+ aspectCards:[["Cable",1],["X-23",1],["Team Training",3],["Advanced Suit",3],["Sidekick",1],["Side-by-Side",3],["Suit Up",3],["Lead from the Front",3],["The Power of Leadership",2]],
+ basics:[["Legion",1],["Marrow",1]],
+ bonus:[]},
+"magik":{aspect:"Aggression",confidence:"exact",
+ hero:[["Colossus",1],["Limbo",1],["Magik's Crown",1],["Soulsword",1],["Mystical Armor",1],["Scrying",1],["Stepping Disc",3],["Exorcism",2],["Soul Strike",2],["Magic Barrier",2]],
+ aspectCards:[["Goldballs",1],["Tempus",1],["Blood Rage",3],["Test the Defense",3],["Full-Body Charge",3],["Clobber",3],["The Power of Aggression",2]],
+ basics:[["Triage",1],["Stepford Cuckoos",1],["Bloodgem",1],["Basic Spell",3],["Spiritual Meditation",3]],
+ bonus:[]},
+"iceman":{aspect:"Aggression",confidence:"exact",
+ hero:[["Frostbite",6],["Snow Clone",2],["Power Belt",1],["Cryokinetic Perception",1],["Ice Slide",1],["Frozen Solid",2],["Ice Wall",1],["Arctic Attack",2],["Ice Blast",2],["Chill Out!",3]],
+ aspectCards:[["Shark-Girl",1],["Glob",1],["Suppressing Fire",3],["Surprise Move",3],["Take That!",3],["Looking for Trouble",3],["Keep Up the Pressure",1]],
+ basics:[["Shadowcat",1],["Beak",1],["Team-Building Exercise",3],["Recuperation",3],["The Power in All of Us",2]],
+ bonus:[]},
+"jubilee":{aspect:"Justice",confidence:"exact",
+ hero:[["Wolverine",1],["Shopping Spree",1],["Jubilee's Coat",1],["Jubilee's Sunglasses",1],["Blinding Flash",1],["Firecracker",1],["Flash of Light",1],["Grande Finale",1],["Plasmoid Energy",1]],
+ aspectCards:[["Chamber",1],["Husk",1],["Disguise",3],["Waylay",3],["Three Steps Ahead",3],["Generation X",1],["The Power of Justice",2]],
+ basics:[["Synch",1],["Cell Phone",3],["X-Gene",3],["Multitalented",3],["Unlikely Duo",2]],
+ bonus:[["Mutant Mayhem","Leadership",3],["Serve and Protect","Protection",3]]},
+"nightcrawler":{aspect:"Protection",confidence:"exact",
+ hero:[["Daytripper",1],["Kurt's Chapel",1],["Kurt's Cutlasses",1],["Prehensile Tail",1],["Bamf!",3],["'Port and Punch",2],["Teleport Drop",1],["Scout Ahead",2],["'Port Away",1],["Tally Ho!",2]],
+ aspectCards:[["Rogue",1],["Northstar",1],["Change of Fortune",3],["Under Control",3],["\"Come Get Me, Bub!\"",3],["Powerful Punch",3],["Riposte",3],["The Power of Protection",2],["Astonishing X-Men",1]],
+ basics:[["Gambit",1],["Moira MacTaggert",1]],
+ bonus:[["Combine Forces","Aggression",3],["Gunboat Diplomacy","Justice",3]]},
+"magneto-hero":{aspect:"Leadership",confidence:"exact",
+ hero:[["Asteroid M",1],["Magneto's Helmet",1],["Magneto's Armor",1],["Magneto's Cape",1],["Magnetic Bubble",1],["Wrapped in Metal",2],["Electromagnetic Blast",2],["Metal Shards",2],["Magnetic Missile",2],["Master of Magnetism",2]],
+ aspectCards:[["M",1],["Kid Omega",1],["Phoenix",1],["Cyclops",1],["Won't Stay Down",3],["Squared Off",3],["Noble Sacrifice",3],["\"You Got This!\"",3],["New Recruits",1]],
+ basics:[["White Queen",1],["Face the Past",1],["Deft Focus",3],["Surge",1],["Anole",1],["Bling!",1],["Indra",1],["Children of the Atom",3]],
+ bonus:[]},
+"mariahill":{aspect:"Leadership",confidence:"exact",
+ hero:[["Nick Fury",1],["All-Points Bulletin",2],["On the Double",2],["Reinforcements",3],["The Hard Call",1],["Special Funding",2],["Support Staff",1],["The Iliad",1],["Life Model Decoy",1],["S.H.I.E.L.D. Director",1]],
+ aspectCards:[["Victoria Hand",1],["Slingshot",1],["Organizational Support",3],["Agents of S.H.I.E.L.D.",3],["Command Team",3],["The Circe",1]],
+ basics:[["Dum Dum Dugan",1],["Grant Ward",1],["Melinda May",1],["Super Spies",2],["Front Organization",3]],
+ bonus:[["The Bellerophon","Aggression",1],["The Douglass","Justice",1],["The Pericles","Protection",1]]},
+"nickfury":{aspect:"Justice",confidence:"exact",
+ hero:[["Assault",1],["Maria Hill",1],["Concentrated Fire",2],["Covert Surveillance",3],["Spray Fire",2],["Fury's Flying Car",1],["Safe House #221",1],["EM Shield",1],["Eyepatch Camera",1],["Fury's Watch",1],["Intelligence Analysis",1],["Secret Agent",1]],
+ aspectCards:[["Agent Coulson",1],["Quake",1],["Global Logistics",3],["Informant",3],["Intelligence",3],["Prism Dust",3],["Under Surveillance",3]],
+ basics:[["Nick Fury, Sr.",1],["Jemma Simmons",1],["Leo Fitz",1]],
+ bonus:[]},
+"blackpanther-shuri":{aspect:"Justice",confidence:"exact",
+ hero:[["T'Challa",1],["Clawed Strike",2],["On the Prowl",2],["Wakanda Forever!",1],["Vibranium",2],["The Elephant's Trunk",1],["Queen Ramonda",1],["Aja-Adanna",1],["Kimoyo Beads",1],["Panther Claws",1],["Spider Bites",1],["Vibranium Suit",1]],
+ aspectCards:[["Manifold",1],["Infiltration",3],["Going Undercover",1],["Show of Empathy",1],["The Raft",1],["Invisibility Gear",3],["Sonic Rifle",3],["Sting Operation",3],["Redemption",1]],
+ basics:[["Aneka",1],["Ayo",1],["Okoye",1],["Heart of the Panther",2],["Build Support",1],["Dora Milaje",1]],
+ bonus:[["White Wolf","Leadership",1],["Target Spotter","Aggression",3]]},
+"silk":{aspect:"Protection",confidence:"exact",
+ hero:[["Smooth as Silk",2],["Swinging Silk Kick",3],["Wallcrawl",2],["Get the Scoop",1],["Albert Moon",1],["J. Jonah Jameson",1],["Eidetic Memory",1],["Organic Webbing",1],["Outwit",1],["Spider Claws",1],["Spider Reflexes",1]],
+ aspectCards:[["Scarlet Spider",1],["Spider-Byte",1],["Not Today!",3],["\"Stop Hitting Yourself\"",3],["Dr. Sinclair",1],["Energy Shield",3],["Ready for a Fight",3],["Stun Gun",3]],
+ basics:[["Madame Web",1],["Spider-Man",1],["Across the Spider-Verse",1],["Investigative Journalism",1]],
+ bonus:[["Spider-Man 2099","Leadership",1],["Spider-Woman","Aggression",1],["Quick Quip","Justice",3]]},
+"falcon":{aspect:"Leadership",confidence:"exact",
+ hero:[["Redwing",1],["Bird of Prey",2],["Bird's-Eye View",2],["Up, Up, and Away",2],["Falcon's Flock",1],["Soup Kitchen",1],["Aerial Evacuation",1],["Aerial Recon",1],["Battlefield Awareness",1],["Draw Their Fire",1],["Talon Line",1],["Vibranium Microweave",1]],
+ aspectCards:[["Adam Warlock",1],["Aero",1],["Cloud 9",1],["Hugin & Munin",1],["Spectrum",1],["Strength in Diversity",3],["Flight Squadron",3],["Resource Reserve",3],["The Triskelion",1],["Captain America",1],["Wingman",3],["Captain America's Shield",1]],
+ basics:[["The Power of Flight",3]],
+ bonus:[["Winter Soldier","Aggression",1],["Misty Knight","Justice",1],["Ops Room","Protection",3]]},
+"wintersoldier":{aspect:"Aggression",confidence:"exact",
+ hero:[["Cybernetic Arm",1],["Black Widow",1],["Arm Block",2],["Metal Punch",3],["Electrical Discharge",2],["Safe House #30",1],["Silent Infiltration",2],["Winter Armor",1],["Winter Mask",1],["Winter Rifle",1]],
+ aspectCards:[["Captain America",1],["Deathlok",1],["Firepower",3],["One by One",3],["Spoiling for a Fight",3],["Aggressive Stance",3],["Bambino",1],["Man on the Wall",1],["S.H.I.E.L.D. Sidearm",3]],
+ basics:[["Nick Fury, Sr.",1],["Super-Soldiers",2],["Winter, Widow, Soldier, Spy",2],["S.H.I.E.L.D. Deputy",3]],
+ bonus:[["White Widow","Protection",1]]},
+"wonderman":{aspect:"Justice",confidence:"exact",
+ hero:[["Ionic Physiology",1],["Active Altruism",3],["Ionic Blast",2],["Starstruck",3],["Energy Siphon",2],["Wonder Fans",1],["Jet Belt",1],["Mr. Hollywood",1],["Signature Sunglasses",1],["\"What Are You?\"",1]],
+ aspectCards:[["Firebird",1],["Hawkeye",1],["Scarlet Witch",1],["Sentry",1],["Battlefield Benevolence",3],["Everywhere All at Once",3],["Heroic Conditioning",3]],
+ basics:[["Swordsman",1],["Jarvis",1],["Avengers Compound",1]],
+ bonus:[["Bombs Away","Aggression",3],["Stronger Together","Protection",3],["Unified Strike","Leadership",3],["Caught in the Crossfire","Aggression",3],["Cameo","Leadership",1],["Coordinated Effort","Leadership",3],["Disarming Defense","Protection",3]]},
+"hercules":{aspect:"Leadership",confidence:"exact",
+ hero:[["Defeat the Hydra",1],["Embody Pathos",1],["Protect Humanity",1],["Nemean Lion Skin",1],["Shield of Perseus",1],["Sword of Peleus",1],["Amadeus Cho",1],["The Gift of Battle",3],["Son of Zeus",2],["Wisdom of Athena",2],["Olympus",1],["Gauntlets of Hercules",1],["Golden Mace",1],["Herc's Helm",1],["Lion of Olympus",2],["Prince of Power",1]],
+ aspectCards:[["Deathcry",1],["Namora",1],["Thor",1],["Teamwork",3],["Call for Backup",1],["Recruitment Drive",3],["\"Avenge Me!\"",3]],
+ basics:[["Gilgamesh",1],["Ancient Rivalry",2],["Limitless Stamina",3],["Evaluate Threat",1],["Avengers Compound",1],["Helicarrier",1],["Quincarrier",1]],
+ bonus:[]},
+"daredevil":{aspect:"Justice",confidence:"exact",
+ hero:[["Acute Tactility",1],["Enhanced Olfaction",1],["Heightened Hearing",1],["Radar Sense",1],["Superior Taste",1],["Elektra",1],["Cross-Examination",2],["Deposition",2],["Living Lie Detector",2],["Raising Hell",1],["Focus the Senses",1],["Foggy Nelson",1],["Karen Page",1],["Nelson and Murdock",1],["Sister Maggie",1],["Daredevil's Billy Club",1],["The Man Without Fear",1]],
+ aspectCards:[["Blindspot",1],["Cloak",1],["Dagger",1],["Ghost Rider",1],["Know Your Enemy",3],["De-escalation",1],["Chance Encounter",3],["Legal Trouble",3],["Move in Shadow",3],["Stealth Training",3]],
+ basics:[["Stick",1],["Contingency Planning",3],["Dance with the Devil",2]],
+ bonus:[]},
+"echo":{aspect:"Protection",confidence:"exact",
+ hero:[["Innate Reflexes",1],["Daredevil",1],["Photographic Reflexes",2],["Study the Tape",2],["The Rez",1],["American Sign Language",1],["Choreography",1],["Echo's Katana",1],["Improvisation",1],["Muscle Memory",1]],
+ aspectCards:[["Army of One",3],["Get Their Attention",3],["In Harm's Way",3],["Powerful Punch",3],["The Best Offense...",3],["Ronin",1],["Stand Alone",3]],
+ basics:[["See No Evil, Hear No Evil",2],["Superpower Training",1]],
+ bonus:[]}
 };
+
+/* ============================= DECKBUILDER CARD POOLS =============================
+   v2 spec calls for a full MarvelCDB card import (§4), but that requires an
+   unattended bulk-fetch pipeline this environment can't run (no outbound network
+   access from scripts — only manual, one-at-a-time fetches). Aspect and Basic
+   cards are shared across every hero rather than hero-specific, so every
+   catalogued precon above contributes its aspectCards/basics/bonus into these
+   shared pools automatically — this grows on its own as more DECKS entries are
+   researched, with no code changes needed here.
+
+   Each pool entry is tagged with phaseId: the progression phase of the hero
+   pack it was sourced from, i.e. the earliest phase that card is known to be
+   available in. This is what lets the deckbuilder's Progression mode hide
+   cards that haven't "released" yet in the chronology (per the app's whole
+   premise — see the Guide tab). It's an approximation bounded by which packs
+   we've catalogued so far, not a real MarvelCDB release-date import; a card's
+   true first-print phase could theoretically be earlier than the earliest
+   pack we've sourced it from. */
+const ASPECT_POOL = { Aggression:[], Justice:[], Leadership:[], Protection:[] };
+const BASIC_POOL = [];
+// Verified complete Core Set card list, pulled directly from the official set
+// page at https://marvelcdb.com/set/core (205 total cards; filtered here to
+// just the Aggression/Justice/Leadership/Protection/Basic "Class" rows, which
+// is exactly the shared card pool every deck draws from — Hero-class and
+// Encounter-class rows on that page are excluded on purpose, since hero-signature
+// cards are tracked separately per hero and encounter cards never appear in a
+// player deck). This is the actual box contents, not inferred from any one
+// hero pack's reprint list, so it's complete and correct regardless of which
+// hero packs happen to be catalogued below. Names are the short display form
+// used throughout this app (e.g. "Hawkeye" not "Hawkeye: Clint Barton") so
+// they merge cleanly with the same cards when a later hero pack reprints them.
+// Each entry is [name, realDeckLimit] using MarvelCDB's "deck_limit" field
+// (the true per-deck maximum), not the raw physical "quantity" printed in the
+// box — Core Set doubles up some basics (e.g. Energy/Genius/Strength ship as
+// quantity:4 since it's a 2-player starter) but the deckbuilding max is still
+// only 1 of each, same as everywhere else. Verified per-card via MarvelCDB's
+// single-card API (18050-18093) so this is exact, not a guess.
+const CORE_SET_SEED = {
+  Aggression: [["Hulk",1],["Tigra",1],["Chase Them Down",3],["Relentless Assault",3],["Uppercut",3],["The Power of Aggression",2],["Tac Team",3],["Combat Training",3]],
+  Justice: [["Daredevil",1],["Jessica Jones",1],["For Justice!",3],["Great Responsibility",3],["The Power of Justice",2],["Interrogation Room",3],["Surveillance Team",3],["Heroic Intuition",3]],
+  Leadership: [["Hawkeye",1],["Maria Hill",1],["Vision",1],["Get Ready",3],["Lead from the Front",3],["Make the Call",3],["The Power of Leadership",2],["The Triskelion",1],["Inspired",3]],
+  Protection: [["Black Widow",1],["Luke Cage",1],["Counter-Punch",3],["Get Behind Me!",3],["The Power of Protection",2],["Med Team",3],["Armored Vest",3],["Indomitable",3]]
+};
+const CORE_SET_BASIC_SEED = [["Mockingbird",1],["Nick Fury",1],["Emergency",3],["First Aid",3],["Haymaker",3],["Energy",1],["Genius",1],["Strength",1],["Avengers Mansion",3],["Helicarrier",3],["Tenacity",3]];
+// Fallback only for the rare case a card shows up with no quantity data from
+// any source (should not normally happen now that every hero and Core Set
+// carries real per-card deck_limit values).
+const ASPECT_BASIC_MAX_COPIES = 3;
+function coreSetBaseName(n){ return n.split(":")[0].trim(); }
+function coreSetSeedQty(name, aspect){
+  const list = aspect ? CORE_SET_SEED[aspect] : CORE_SET_BASIC_SEED;
+  if(!list) return null;
+  const bn = coreSetBaseName(name);
+  const hit = list.find(c => coreSetBaseName(c[0]) === bn);
+  return hit ? hit[1] : null;
+}
+function isCoreSetCard(name, aspect){
+  return coreSetSeedQty(name, aspect) != null;
+}
+(function buildCardPools(){
+  const basicMap = new Map(); // name -> {phaseId, qty}
+  function mergeInto(list, name, phaseId, qty){
+    const realQty = qty!=null ? qty : ASPECT_BASIC_MAX_COPIES;
+    const existing = list.find ? list.find(c=>c.name===name) : null;
+    if(existing){
+      existing.phaseId = Math.min(existing.phaseId, phaseId);
+      // Prefer the smaller-phase (earlier, more authoritative) source's qty;
+      // if this merge is introducing an earlier phase, trust its qty instead.
+      if(phaseId <= existing.phaseId) existing.qty = realQty;
+    } else {
+      list.push({name, qty:realQty, phaseId});
+    }
+  }
+  // Seed with the verified, complete Core Set list first (all phase 0) so the
+  // pool is correct and complete from Phase 0 on, independent of which hero
+  // packs have been catalogued.
+  Object.entries(CORE_SET_SEED).forEach(([aspect, entries])=>{
+    entries.forEach(([name,qty]) => mergeInto(ASPECT_POOL[aspect], name, 0, qty));
+  });
+  CORE_SET_BASIC_SEED.forEach(([name,qty]) => basicMap.set(name, {phaseId:0, qty}));
+  // Then layer in each catalogued hero pack's aspectCards/basics/bonus. A pack's
+  // aspectCards/basics list is that pack's full assortment for its aspect AS OF
+  // that pack's release, which includes reprints of the Core Set cards above
+  // (deduped by name, using the verified Core Set qty) plus any genuinely new
+  // cards that pack introduced (e.g. Black Widow's Justice list includes
+  // "Spycraft", which isn't a Core Set card) — those are tagged with that
+  // pack's own real phase and use that pack's own real deck_limit.
+  Object.entries(DECKS).forEach(([heroId, d])=>{
+    const hero = HERO_BY_ID[heroId];
+    const phaseId = hero ? hero.phase : 0;
+    (d.aspectCards||[]).filter(([,q])=>q!=null).forEach(([name,q])=>{
+      const seedQty = coreSetSeedQty(name, d.aspect);
+      const cardPhase = seedQty!=null ? 0 : phaseId;
+      mergeInto(ASPECT_POOL[d.aspect] || (ASPECT_POOL[d.aspect]=[]), name, cardPhase, seedQty!=null ? seedQty : q);
+    });
+    (d.bonus||[]).filter(([,,q])=>q!=null).forEach(([name,aspect,q])=>{
+      // A "bonus" card's aspect is sometimes "Basic" (e.g. Ant-Man's "Assess
+      // the Situation") — those belong in the Basic pool, not a stray
+      // ASPECT_POOL.Basic key that nothing in the deckbuilder ever reads.
+      if(aspect === "Basic"){
+        const seedQty = coreSetSeedQty(name, null);
+        const cardPhase = seedQty!=null ? 0 : phaseId;
+        const cur = basicMap.get(name);
+        if(cur==null || cardPhase < cur.phaseId) basicMap.set(name, {phaseId:cardPhase, qty: seedQty!=null ? seedQty : q});
+        return;
+      }
+      const seedQty = coreSetSeedQty(name, aspect);
+      const cardPhase = seedQty!=null ? 0 : phaseId;
+      mergeInto(ASPECT_POOL[aspect] || (ASPECT_POOL[aspect]=[]), name, cardPhase, seedQty!=null ? seedQty : q);
+    });
+    (d.basics||[]).filter(([,q])=>q!=null).forEach(([name,q])=>{
+      const seedQty = coreSetSeedQty(name, null);
+      const cardPhase = seedQty!=null ? 0 : phaseId;
+      const cur = basicMap.get(name);
+      if(cur==null || cardPhase < cur.phaseId) basicMap.set(name, {phaseId:cardPhase, qty: seedQty!=null ? seedQty : q});
+    });
+  });
+  basicMap.forEach(({phaseId,qty},name)=>BASIC_POOL.push({name, qty, phaseId}));
+})();
+// Any hero with a catalogued (verified) hero-specific card list can be deckbuilt,
+// using that hero's own required cards plus the shared aspect/basic pools above —
+// their aspect doesn't have to match the pack their cards came from.
+const DECKBUILDABLE_HEROES = new Set(Object.keys(DECKS).filter(id => DECKS[id].hero && DECKS[id].hero.length));
+
+// The same "current phase" logic used on Home: the first phase that isn't
+// fully complete yet (heroes benchmarked, scenarios unlocked, campaign done).
+function computeCurrentPhaseId(){
+  for(const ph of PHASES){
+    const heroesOk = ph.heroes.every(([id])=>isHeroDone(id));
+    const scenOk = ph.scenarios.every(([id])=>isScenarioUnlocked(id));
+    const campOk = ph.campaign ? !!STATE.campaignComplete[ph.id] : true;
+    if(!(heroesOk && scenOk && campOk)) return ph.id;
+  }
+  return PHASES[PHASES.length-1].id;
+}
 
 /* ============================= STATE (v2) ============================= */
 // v1 key is never written to or deleted by this app anymore — it remains on
@@ -759,6 +1224,15 @@ function computeHeroBenchmarks(heroId){
 function isHeroDone(id){ const b=computeHeroBenchmarks(id); return b.preconStd && b.preconExp && b.customExp; }
 function isScenarioUnlocked(id){ return !!STATE.scenarioUnlocked[id]; }
 function matrixKey(h,s){ return h+"|"+s; }
+// Shared label for a play's deck, used in Log History and the matchup detail view.
+function playDeckLabel(p){
+  if(p.deckType==="precon") return "Precon";
+  if(p.deckId){
+    const d = getDeck(p.deckId);
+    return d ? ("Custom — "+d.name) : "Custom (saved deck removed)";
+  }
+  return p.isLegacyCustom ? "Custom (legacy/unknown deck)" : "Custom (unsaved)";
+}
 
 /* ---- derived matrix cell: highest difficulty successfully cleared ---- */
 function derivedMatrixCell(heroId, scenarioId){
@@ -772,6 +1246,127 @@ function derivedMatrixCell(heroId, scenarioId){
   }
   const last = plays.slice().sort((a,b)=>b.ts-a.ts)[0];
   return { result:last.result, play:last };
+}
+
+/* ============================= DECKBUILDER: model, versioning, legality ============================= */
+function newId(prefix){ return prefix+Date.now()+Math.random().toString(36).slice(2,7); }
+function getDeck(id){ return STATE.decks.find(d=>d.id===id) || null; }
+function getPreset(id){ return STATE.aspectPresets.find(p=>p.id===id) || null; }
+
+// A deck locks the moment any logged play references it. This is derived from
+// the play log rather than a stored flag, so it can never drift out of sync
+// (spec §7: "locked=true (or derive locked from play references)").
+function isDeckLocked(deckId){ return STATE.plays.some(p=>p.deckId===deckId); }
+function decksForHero(heroId, includeArchived){
+  return STATE.decks.filter(d=>d.heroId===heroId && (includeArchived || !d.archived));
+}
+
+// A card is selectable under a given pool mode/cutoff if Full Collection is
+// active, or its phaseId (the earliest phase we know it's available in) is
+// at or before the cutoff phase (spec §5.3 Progression Card Pool).
+function cardAvailable(card, poolMode, cutoffPhaseId){
+  return poolMode==="full" || card.phaseId<=cutoffPhaseId;
+}
+function cardSelectionIssues(aspect, cards, basics, poolMode, cutoffPhaseId){
+  const reasons = [];
+  const pool = ASPECT_POOL[aspect] || [];
+  cards.forEach(c=>{
+    const poolCard = pool.find(p=>p.name===c.name);
+    const max = poolCard ? poolCard.qty : 0;
+    if(c.qty > max) reasons.push(`${c.name}: ${c.qty} copies exceeds the ${max}-copy limit for ${aspect}.`);
+    else if(poolCard && !cardAvailable(poolCard, poolMode, cutoffPhaseId)) reasons.push(`${c.name}: not yet available as of Phase ${cutoffPhaseId} (Progression mode).`);
+  });
+  basics.forEach(c=>{
+    const poolCard = BASIC_POOL.find(p=>p.name===c.name);
+    const max = poolCard ? poolCard.qty : 0;
+    if(c.qty > max) reasons.push(`${c.name}: ${c.qty} copies exceeds the ${max}-copy limit for Basic cards.`);
+    else if(poolCard && !cardAvailable(poolCard, poolMode, cutoffPhaseId)) reasons.push(`${c.name}: not yet available as of Phase ${cutoffPhaseId} (Progression mode).`);
+  });
+  return reasons;
+}
+
+function cardTotal(deck){
+  const c1 = deck.cards.reduce((s,c)=>s+c.qty,0);
+  const c2 = deck.basics.reduce((s,c)=>s+c.qty,0);
+  const heroCards = (DECKS[deck.heroId] && DECKS[deck.heroId].hero) ? DECKS[deck.heroId].hero.reduce((s,[,q])=>s+q,0) : 0;
+  return c1+c2+heroCards;
+}
+
+// MVP legality engine (spec §5.4). We can confidently verify: the hero's
+// required cards are catalogued, exactly one aspect is chosen, and no card
+// exceeds its available copy count. We deliberately do NOT hard-enforce an
+// exact 40-card total: our own sourced precon totals don't cleanly land on
+// 40 either, so treating that as a strict pass/fail would be presenting an
+// unverified rule as fact. Total is shown for reference instead.
+function validateDeck(deck){
+  const reasons = [];
+  const heroData = DECKS[deck.heroId];
+  if(!heroData || !heroData.hero.length) reasons.push("This hero's required card set isn't catalogued yet.");
+  if(!deck.aspect) reasons.push("Choose exactly one aspect.");
+  reasons.push(...cardSelectionIssues(deck.aspect, deck.cards, deck.basics, deck.poolMode, deck.cutoffPhaseId));
+  const total = cardTotal(deck);
+  if(total===0) reasons.push("Deck is empty — add some cards.");
+  const legal = reasons.length===0;
+  return { legal, status: legal ? "playable" : "draft", reasons, total };
+}
+function validatePreset(preset){
+  const reasons = [];
+  if(!preset.aspect) reasons.push("Choose exactly one aspect.");
+  reasons.push(...cardSelectionIssues(preset.aspect, preset.cards, preset.basics, preset.poolMode, preset.cutoffPhaseId));
+  const total = preset.cards.reduce((s,c)=>s+c.qty,0) + preset.basics.reduce((s,c)=>s+c.qty,0);
+  if(total===0) reasons.push("Preset is empty — add some cards.");
+  return { legal: reasons.length===0, reasons, total };
+}
+
+function createDeck(heroId, aspect, name){
+  const deck = {
+    id:newId("d"), name: name || `${HERO_BY_ID[heroId]?.name||heroId} ${aspect} v1`,
+    heroId, aspect, cards:[], basics:[], status:"draft", archived:false,
+    poolMode:"progression", cutoffPhaseId:computeCurrentPhaseId(),
+    sourcePresetId:null, parentDeckId:null,
+    createdAt:new Date().toISOString(), modifiedAt:new Date().toISOString()
+  };
+  STATE.decks.push(deck); saveState();
+  return deck;
+}
+function duplicateDeckAsNewVersion(oldDeck){
+  const m = oldDeck.name.match(/ v(\d+)$/);
+  const nextV = m ? (parseInt(m[1],10)+1) : 2;
+  const baseName = oldDeck.name.replace(/ v\d+$/, "");
+  const deck = {
+    id:newId("d"), name:`${baseName} v${nextV}`,
+    heroId:oldDeck.heroId, aspect:oldDeck.aspect,
+    cards:oldDeck.cards.map(c=>({...c})), basics:oldDeck.basics.map(c=>({...c})),
+    status:oldDeck.status, archived:false,
+    poolMode:oldDeck.poolMode||"progression", cutoffPhaseId: oldDeck.cutoffPhaseId!=null ? oldDeck.cutoffPhaseId : computeCurrentPhaseId(),
+    sourcePresetId:oldDeck.sourcePresetId||null, parentDeckId:oldDeck.id,
+    createdAt:new Date().toISOString(), modifiedAt:new Date().toISOString()
+  };
+  STATE.decks.push(deck); saveState();
+  return deck;
+}
+function createPreset(aspect, name){
+  const preset = {
+    id:newId("ap"), name: name || `${aspect} Preset`,
+    aspect, cards:[], basics:[], archived:false,
+    poolMode:"progression", cutoffPhaseId:computeCurrentPhaseId(),
+    createdAt:new Date().toISOString(), modifiedAt:new Date().toISOString()
+  };
+  STATE.aspectPresets.push(preset); saveState();
+  return preset;
+}
+function attachPresetToHero(preset, heroId){
+  const deck = {
+    id:newId("d"), name:`${HERO_BY_ID[heroId]?.name||heroId} ${preset.aspect} (from ${preset.name})`,
+    heroId, aspect:preset.aspect,
+    cards:preset.cards.map(c=>({...c})), basics:preset.basics.map(c=>({...c})),
+    status:"draft", archived:false,
+    poolMode:preset.poolMode||"progression", cutoffPhaseId: preset.cutoffPhaseId!=null ? preset.cutoffPhaseId : computeCurrentPhaseId(),
+    sourcePresetId:preset.id, parentDeckId:null,
+    createdAt:new Date().toISOString(), modifiedAt:new Date().toISOString()
+  };
+  STATE.decks.push(deck); saveState();
+  return deck;
 }
 
 /* ============================= NAV ============================= */
@@ -788,7 +1383,13 @@ function showView(name){
   if(name==="log") renderLog();
   if(name==="home") renderHome();
   if(name==="phases") renderPhases();
-  if(name==="decks") renderDeckDetail(document.getElementById("deckPicker").value);
+  if(name==="decks"){
+    const activeTab = document.querySelector(".deck-subtab.active");
+    const tab = activeTab ? activeTab.dataset.decktab : "mydecks";
+    if(tab==="mydecks") renderMyDecks();
+    else if(tab==="presets") renderAspectPresets();
+    else renderDeckDetail(document.getElementById("deckPicker").value);
+  }
   window.scrollTo(0,0);
 }
 
@@ -806,13 +1407,7 @@ function renderHome(){
   renderMigrationCard();
 
   // current phase = first phase not fully complete
-  let current = PHASES[PHASES.length-1];
-  for(const ph of PHASES){
-    const heroesOk = ph.heroes.every(([id])=>isHeroDone(id));
-    const scenOk = ph.scenarios.every(([id])=>isScenarioUnlocked(id));
-    const campOk = ph.campaign ? !!STATE.campaignComplete[ph.id] : true;
-    if(!(heroesOk && scenOk && campOk)){ current = ph; break; }
-  }
+  const current = PHASES[computeCurrentPhaseId()];
   document.getElementById("statCurrentPhase").textContent = current.id;
   document.getElementById("progHeroes").style.width = (heroesDone/HEROES.length*100)+"%";
   document.getElementById("progMatrix").style.width = (filledCells/totalCells*100)+"%";
@@ -1048,7 +1643,7 @@ function openMatchupDetail(heroId, scenarioId){
   const best = derivedMatrixCell(heroId,scenarioId);
 
   const historyRows = plays.map(p=>{
-    const deckLabel = p.deckType==="precon" ? "Precon" : (p.isLegacyCustom ? "Custom (legacy/unknown deck)" : "Custom");
+    const deckLabel = playDeckLabel(p);
     return `<div class="log-entry">
       <div class="top">
         <div class="title">${formatDifficulty(p)} · ${deckLabel}</div>
@@ -1183,6 +1778,496 @@ function renderDeckDetail(heroId){
   holder.innerHTML = html;
 }
 populateDeckPicker();
+document.getElementById("deckbuildableCount").textContent = DECKBUILDABLE_HEROES.size;
+
+/* ---- Deck / preset subtabs ---- */
+document.querySelectorAll(".deck-subtab").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".deck-subtab").forEach(b=>b.classList.toggle("active", b===btn));
+    const tab = btn.dataset.decktab;
+    document.querySelectorAll(".deck-subview").forEach(v=>v.classList.remove("active"));
+    document.getElementById("deckSubview-"+tab).classList.add("active");
+    if(tab==="mydecks") renderMyDecks();
+    if(tab==="presets") renderAspectPresets();
+    if(tab==="precon") renderDeckDetail(document.getElementById("deckPicker").value);
+  });
+});
+
+/* ---- in-app confirm/alert modals ----
+   iOS Safari silently no-ops window.confirm()/alert() when the app is running
+   standalone (added to the home screen, which this app is built for via the
+   apple-mobile-web-app-capable meta tag) — the call returns immediately
+   without ever showing a dialog. That made every confirm()-gated action
+   (deleting a deck, deleting a preset, resetting progress) look like a dead
+   button on an iPad home-screen install. These render an actual on-screen
+   modal instead, so they work the same everywhere. */
+function showConfirmModal(message, onConfirm, opts){
+  opts = opts || {};
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <p style="margin:0 0 16px;font-size:14px;line-height:1.5;color:var(--text);">${message}</p>
+    <button class="big-btn" id="confirmModalYes">${opts.confirmLabel||'Delete'}</button>
+    <button class="btn2" id="confirmModalNo" style="margin-top:8px;width:100%;">Cancel</button>
+  </div>`;
+  document.body.appendChild(backdrop);
+  const close = ()=>backdrop.remove();
+  backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) close(); });
+  backdrop.querySelector("#confirmModalNo").addEventListener("click", close);
+  backdrop.querySelector("#confirmModalYes").addEventListener("click", ()=>{ close(); onConfirm(); });
+}
+function showAlertModal(message){
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <p style="margin:0 0 16px;font-size:14px;line-height:1.5;color:var(--text);">${message}</p>
+    <button class="big-btn" id="alertModalOk">OK</button>
+  </div>`;
+  document.body.appendChild(backdrop);
+  const close = ()=>backdrop.remove();
+  backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) close(); });
+  backdrop.querySelector("#alertModalOk").addEventListener("click", close);
+}
+
+/* ---- small reusable hero-picker modal (used by New Deck / Attach Preset) ----
+   Only offers heroes released by the current progression phase — matches the
+   phase-gating already applied to card pools, so a new deck can't be started
+   for a hero you haven't reached yet chronologically. */
+function openHeroPicker(onPick){
+  const currentPhaseId = computeCurrentPhaseId();
+  const heroesAvail = HEROES.filter(h=>DECKBUILDABLE_HEROES.has(h.id) && h.phase<=currentPhaseId);
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <h2 style="margin-top:0;font-size:16px;">Choose a hero</h2>
+    <select id="heroPickerSel" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-size:14px;margin-bottom:12px;">
+      ${heroesAvail.map(h=>`<option value="${h.id}">${h.name}</option>`).join("")}
+    </select>
+    <button class="big-btn" id="heroPickerGo">Continue</button>
+    <button class="btn2" id="heroPickerCancel" style="margin-top:8px;">Cancel</button>
+  </div>`;
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) backdrop.remove(); });
+  backdrop.querySelector("#heroPickerCancel").addEventListener("click",()=>backdrop.remove());
+  backdrop.querySelector("#heroPickerGo").addEventListener("click",()=>{
+    const heroId = backdrop.querySelector("#heroPickerSel").value;
+    backdrop.remove();
+    onPick(heroId);
+  });
+}
+
+document.getElementById("newDeckBtn").addEventListener("click",()=>{
+  if(!DECKBUILDABLE_HEROES.size){ showAlertModal("No heroes have catalogued card data yet."); return; }
+  if(!HEROES.some(h=>DECKBUILDABLE_HEROES.has(h.id) && h.phase<=computeCurrentPhaseId())){ showAlertModal("No heroes released yet at your current progression phase have catalogued card data."); return; }
+  openHeroPicker(heroId=>{
+    const aspect = (DECKS[heroId] && DECKS[heroId].aspect) || Object.keys(ASPECT_POOL)[0];
+    const deck = createDeck(heroId, aspect);
+    renderMyDecks();
+    openDeckEditor(deck.id);
+  });
+});
+document.getElementById("newPresetBtn").addEventListener("click",()=>{
+  const preset = createPreset(Object.keys(ASPECT_POOL)[0]);
+  renderAspectPresets();
+  openPresetEditor(preset.id);
+});
+
+/* ---- My Decks list ---- */
+function renderMyDecks(){
+  const holder = document.getElementById("myDecksList");
+  document.getElementById("deckbuildableCount").textContent = DECKBUILDABLE_HEROES.size;
+  const decks = STATE.decks.slice().sort((a,b)=> new Date(b.modifiedAt)-new Date(a.modifiedAt));
+  if(!decks.length){ holder.innerHTML = `<p class="empty">No saved decks yet. Tap "+ New Deck" to build your first one.</p>`; return; }
+  holder.innerHTML = decks.map(d=>{
+    const hero = HERO_BY_ID[d.heroId];
+    const locked = isDeckLocked(d.id);
+    const v = validateDeck(d);
+    const statusLabel = d.archived ? "archived" : (locked ? "locked" : v.status);
+    return `<div class="deck-card-item">
+      <div class="dtop">
+        <div>
+          <div class="dname">${d.name}</div>
+          <div class="dmeta">${hero?hero.name:d.heroId} · ${d.aspect} · ${v.total} cards${d.parentDeckId?' · new version':''}</div>
+        </div>
+        <span class="status-pill ${statusLabel}">${statusLabel}</span>
+      </div>
+      <div class="dactions">
+        <button class="btn2" data-viewdeck="${d.id}">${locked?'View':'Edit'}</button>
+        ${locked && !d.archived ? `<button class="btn2" data-duplicatedeck="${d.id}">Duplicate &amp; Edit</button>`:''}
+        ${!d.archived ? `<button class="btn2" data-archivedeck="${d.id}">Archive</button>`:`<button class="btn2" data-unarchivedeck="${d.id}">Unarchive</button>`}
+        <button class="btn2" style="color:#e8828a;" data-deletedeck="${d.id}">Delete</button>
+      </div>
+    </div>`;
+  }).join("");
+  holder.querySelectorAll("[data-viewdeck]").forEach(b=>b.addEventListener("click",()=>openDeckEditor(b.dataset.viewdeck)));
+  holder.querySelectorAll("[data-duplicatedeck]").forEach(b=>b.addEventListener("click",()=>{
+    const nd = duplicateDeckAsNewVersion(getDeck(b.dataset.duplicatedeck));
+    renderMyDecks();
+    openDeckEditor(nd.id);
+  }));
+  holder.querySelectorAll("[data-archivedeck]").forEach(b=>b.addEventListener("click",()=>{
+    getDeck(b.dataset.archivedeck).archived = true; saveState(); renderMyDecks();
+  }));
+  holder.querySelectorAll("[data-unarchivedeck]").forEach(b=>b.addEventListener("click",()=>{
+    getDeck(b.dataset.unarchivedeck).archived = false; saveState(); renderMyDecks();
+  }));
+  holder.querySelectorAll("[data-deletedeck]").forEach(b=>b.addEventListener("click",()=>{
+    try{
+      const id = b.dataset.deletedeck;
+      const locked = isDeckLocked(id);
+      const refCount = locked ? (STATE.plays||[]).filter(p=>p.deckId===id).length : 0;
+      const msg = locked
+        ? `This deck is referenced by ${refCount} logged play${refCount===1?'':'s'}. Deleting it can't be undone — those plays will stay in your log but show as "saved deck removed" instead of the deck name. Delete anyway?`
+        : "Delete this deck? This can't be undone.";
+      showConfirmModal(msg, ()=>{
+        STATE.decks = STATE.decks.filter(d=>d.id!==id);
+        saveState(); renderMyDecks();
+      });
+    } catch(err){
+      showAlertModal("Couldn't delete this deck: " + err.message);
+    }
+  }));
+}
+
+/* ---- Aspect Presets list ---- */
+function renderAspectPresets(){
+  const holder = document.getElementById("presetsList");
+  const presets = STATE.aspectPresets.slice().sort((a,b)=> new Date(b.modifiedAt)-new Date(a.modifiedAt));
+  if(!presets.length){ holder.innerHTML = `<p class="empty">No aspect presets yet.</p>`; return; }
+  holder.innerHTML = presets.map(p=>{
+    const v = validatePreset(p);
+    return `<div class="deck-card-item">
+      <div class="dtop">
+        <div>
+          <div class="dname">${p.name}${p.archived?' (archived)':''}</div>
+          <div class="dmeta">${p.aspect} · ${v.total} cards</div>
+        </div>
+        <span class="status-pill ${v.legal?'playable':'draft'}">${v.legal?'ready':'incomplete'}</span>
+      </div>
+      <div class="dactions">
+        <button class="btn2" data-viewpreset="${p.id}">Edit</button>
+        <button class="btn2" data-attachpreset="${p.id}">Attach to Hero</button>
+        <button class="btn2" style="color:#e8828a;" data-deletepreset="${p.id}">Delete</button>
+      </div>
+    </div>`;
+  }).join("");
+  holder.querySelectorAll("[data-viewpreset]").forEach(b=>b.addEventListener("click",()=>openPresetEditor(b.dataset.viewpreset)));
+  holder.querySelectorAll("[data-deletepreset]").forEach(b=>b.addEventListener("click",()=>{
+    showConfirmModal("Delete this preset?", ()=>{
+      STATE.aspectPresets = STATE.aspectPresets.filter(p=>p.id!==b.dataset.deletepreset);
+      saveState(); renderAspectPresets();
+    });
+  }));
+  holder.querySelectorAll("[data-attachpreset]").forEach(b=>b.addEventListener("click",()=>{
+    const preset = getPreset(b.dataset.attachpreset);
+    if(!DECKBUILDABLE_HEROES.size){ showAlertModal("No heroes have catalogued card data yet."); return; }
+    if(!HEROES.some(h=>DECKBUILDABLE_HEROES.has(h.id) && h.phase<=computeCurrentPhaseId())){ showAlertModal("No heroes released yet at your current progression phase have catalogued card data."); return; }
+    openHeroPicker(heroId=>{
+      const deck = attachPresetToHero(preset, heroId);
+      renderMyDecks();
+      openDeckEditor(deck.id);
+    });
+  }));
+}
+
+/* ---- shared card-stepper helpers ---- */
+function qtyOf(list, name){ const e=list.find(c=>c.name===name); return e?e.qty:0; }
+function setQty(list, name, qty){
+  const e = list.find(c=>c.name===name);
+  if(qty<=0){ if(e) list.splice(list.indexOf(e),1); return; }
+  if(e) e.qty = qty; else list.push({name, qty});
+}
+function stepperRow(name, max, current, kind){
+  const safeName = name.replace(/"/g,'&quot;');
+  let btns = "";
+  for(let n=0; n<=max; n++){
+    btns += `<button data-setqty="${n}" data-kind="${kind}" data-name="${safeName}" class="${current===n?'active':''}">${n}</button>`;
+  }
+  return `<div class="card-row">
+    <span class="cn">${name}</span>
+    <div class="qtybtns">${btns}</div>
+  </div>`;
+}
+
+/* ---- Deck editor modal ---- */
+function openDeckEditor(deckId){
+  const deck = getDeck(deckId);
+  if(!deck) return;
+  renderDeckEditorModal(deck, isDeckLocked(deck.id));
+}
+function renderDeckEditorModal(deck, locked){
+  let backdrop = document.getElementById("deckEditorBackdrop");
+  if(!backdrop){
+    backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.id = "deckEditorBackdrop";
+    document.body.appendChild(backdrop);
+    backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) closeDeckEditor(); });
+  }
+  const aspectOptions = Object.keys(ASPECT_POOL).map(a=>`<option value="${a}" ${a===deck.aspect?'selected':''}>${a}</option>`).join("");
+  const heroData = DECKS[deck.heroId];
+  const v = validateDeck(deck);
+  const currentPhaseId = computeCurrentPhaseId();
+  if(deck.poolMode==null) deck.poolMode = "progression";
+  if(deck.cutoffPhaseId==null) deck.cutoffPhaseId = currentPhaseId;
+  const phaseOptions = PHASES.filter(ph=>ph.id<=currentPhaseId)
+    .map(ph=>`<option value="${ph.id}" ${ph.id===deck.cutoffPhaseId?'selected':''}>Phase ${ph.id} — ${ph.title}</option>`).join("");
+  // Hero swap options respect this deck's own progression cutoff, mirroring card-pool
+  // gating — but the deck's current hero always stays visible even if a lowered
+  // cutoff would otherwise strand it, same pattern as stranded cards below.
+  const heroOptions = HEROES.filter(h=>DECKBUILDABLE_HEROES.has(h.id) && (h.phase<=deck.cutoffPhaseId || h.id===deck.heroId))
+    .map(h=>`<option value="${h.id}" ${h.id===deck.heroId?'selected':''}>${h.name}</option>`).join("");
+
+  const heroCardsHTML = heroData ? `<ul class="deck-list">${heroData.hero.map(([n,q])=>`<li><span class="n">${n}</span><span class="q">${q}x</span></li>`).join("")}</ul>` : `<p class="deck-note">Not catalogued.</p>`;
+  const pool = ASPECT_POOL[deck.aspect] || [];
+
+  function browserRows(pool, selectedList, kind){
+    const available = pool.filter(c=>cardAvailable(c, deck.poolMode, deck.cutoffPhaseId));
+    const rows = available.map(c=>stepperRow(c.name, c.qty, qtyOf(selectedList,c.name), kind)).join("") || `<p class="deck-note">No cards catalogued for this ${kind==="aspect"?"aspect":"pool"} yet${deck.poolMode==="progression"?" (as of Phase "+deck.cutoffPhaseId+")":""}.</p>`;
+    // Cards already selected that fell outside the current pool/cutoff (e.g. cutoff lowered after adding) stay visible so they can be removed.
+    const strandedNames = new Set(available.map(c=>c.name));
+    const stranded = selectedList.filter(c=>!strandedNames.has(c.name) && c.qty>0);
+    const strandedHTML = stranded.length ? `<p class="deck-note" style="margin-top:8px;">Not available at the current pool/phase — remove to fix:</p>` +
+      stranded.map(c=>`<div class="card-row"><span class="cn">${c.name} <span class="cmax">(${c.qty}x selected)</span></span><div class="qtybtns"><button data-setqty="0" data-kind="${kind}" data-name="${c.name.replace(/"/g,'&quot;')}" class="remove">Remove</button></div></div>`).join("") : "";
+    return rows + strandedHTML;
+  }
+  const aspectRows = locked
+    ? `<ul class="deck-list">${deck.cards.map(c=>`<li><span class="n">${c.name}</span><span class="q">${c.qty}x</span></li>`).join("") || '<li class="deck-empty">None selected.</li>'}</ul>`
+    : browserRows(pool, deck.cards, "aspect");
+  const basicRows = locked
+    ? `<ul class="deck-list">${deck.basics.map(c=>`<li><span class="n">${c.name}</span><span class="q">${c.qty}x</span></li>`).join("") || '<li class="deck-empty">None selected.</li>'}</ul>`
+    : browserRows(BASIC_POOL, deck.basics, "basic");
+
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">
+      <h2 style="margin:0;font-size:16px;">${locked?'View Deck':'Edit Deck'}</h2>
+      <button class="btn2" id="closeDeckEditor">Close</button>
+    </div>
+    ${locked ? `<div class="locked-note">This deck has been used in a logged play, so its card list is locked to keep that play's history reproducible. Use "Duplicate &amp; Edit" from the deck list to change it as a new version.</div>` : ''}
+    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Name</label>
+    <input type="text" id="deckNameInput" value="${deck.name.replace(/"/g,'&quot;')}" ${locked?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;margin-bottom:10px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+      <div style="flex:1 1 160px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Hero</label>
+        <select id="deckHeroSel" ${locked?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;">${heroOptions}</select>
+      </div>
+      <div style="flex:1 1 160px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Aspect</label>
+        <select id="deckAspectSel" ${locked?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;">${aspectOptions}</select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+      <div style="flex:1 1 160px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Card Pool</label>
+        <select id="deckPoolModeSel" ${locked?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;">
+          <option value="progression" ${deck.poolMode==="progression"?'selected':''}>Progression (matches this app's phases)</option>
+          <option value="full" ${deck.poolMode==="full"?'selected':''}>Full Collection</option>
+        </select>
+      </div>
+      <div style="flex:1 1 160px;${deck.poolMode==='full'?'opacity:.4;':''}">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">As of Phase</label>
+        <select id="deckCutoffSel" ${locked||deck.poolMode==='full'?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;">${phaseOptions}</select>
+      </div>
+    </div>
+    <p class="deck-note" style="margin-bottom:10px;">In Progression mode, only aspect/basic cards released by the chosen phase are selectable — matching the chronological premise of this whole tracker. Defaults to your current phase; pick an earlier phase to rebuild a hero's historically-accurate deck.</p>
+
+    <div class="legality-box ${v.legal?'legal':'draft'}">
+      <b>${v.legal?'LEGAL':'DRAFT'}</b> · ${v.total} cards
+      ${v.reasons.length?`<ul>${v.reasons.map(r=>`<li>${r}</li>`).join("")}</ul>`:''}
+    </div>
+
+    <div class="deck-editor-section">
+      <h4>Required Hero Cards (locked)</h4>
+      ${heroCardsHTML}
+    </div>
+    <div class="deck-editor-section">
+      <h4>${deck.aspect} Aspect Cards</h4>
+      ${aspectRows}
+    </div>
+    <div class="deck-editor-section">
+      <h4>Basic Cards</h4>
+      ${basicRows}
+    </div>
+    <p class="deck-note" style="margin-top:10px;">Copy limits and required cards are enforced from catalogued precon data. Exact 40-card total enforcement and hero-specific deckbuilding exceptions are deferred until a full card database import.</p>
+  </div>`;
+
+  document.getElementById("closeDeckEditor").addEventListener("click", closeDeckEditor);
+
+  if(!locked){
+    document.getElementById("deckNameInput").addEventListener("change",(e)=>{
+      deck.name = e.target.value.trim() || deck.name;
+      deck.modifiedAt = new Date().toISOString();
+      saveState();
+    });
+    document.getElementById("deckHeroSel").addEventListener("change",(e)=>{
+      deck.heroId = e.target.value;
+      deck.modifiedAt = new Date().toISOString();
+      deck.status = validateDeck(deck).status;
+      saveState();
+      renderDeckEditorModal(deck, locked);
+      renderMyDecks();
+    });
+    document.getElementById("deckAspectSel").addEventListener("change",(e)=>{
+      deck.aspect = e.target.value;
+      deck.cards = [];
+      deck.modifiedAt = new Date().toISOString();
+      deck.status = validateDeck(deck).status;
+      saveState();
+      renderDeckEditorModal(deck, locked);
+      renderMyDecks();
+    });
+    document.getElementById("deckPoolModeSel").addEventListener("change",(e)=>{
+      deck.poolMode = e.target.value;
+      deck.modifiedAt = new Date().toISOString();
+      deck.status = validateDeck(deck).status;
+      saveState();
+      renderDeckEditorModal(deck, locked);
+      renderMyDecks();
+    });
+    document.getElementById("deckCutoffSel").addEventListener("change",(e)=>{
+      deck.cutoffPhaseId = parseInt(e.target.value,10);
+      deck.modifiedAt = new Date().toISOString();
+      deck.status = validateDeck(deck).status;
+      saveState();
+      renderDeckEditorModal(deck, locked);
+      renderMyDecks();
+    });
+    backdrop.querySelectorAll("[data-setqty]").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const kind = btn.dataset.kind;
+        const list = kind==="aspect" ? deck.cards : deck.basics;
+        const poolList = kind==="aspect" ? (ASPECT_POOL[deck.aspect]||[]) : BASIC_POOL;
+        const name = btn.dataset.name;
+        const poolCard = poolList.find(p=>p.name===name) || {qty:0};
+        const max = poolCard.qty;
+        const next = Math.max(0, Math.min(max, parseInt(btn.dataset.setqty,10)));
+        setQty(list, name, next);
+        deck.modifiedAt = new Date().toISOString();
+        deck.status = validateDeck(deck).status;
+        saveState();
+        renderDeckEditorModal(deck, locked);
+        renderMyDecks();
+      });
+    });
+  }
+}
+function closeDeckEditor(){
+  const b = document.getElementById("deckEditorBackdrop");
+  if(b) b.remove();
+  renderMyDecks();
+}
+
+/* ---- Aspect Preset editor modal ---- */
+function openPresetEditor(presetId){
+  const preset = getPreset(presetId);
+  if(!preset) return;
+  renderPresetEditorModal(preset);
+}
+function renderPresetEditorModal(preset){
+  let backdrop = document.getElementById("presetEditorBackdrop");
+  if(!backdrop){
+    backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.id = "presetEditorBackdrop";
+    document.body.appendChild(backdrop);
+    backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) closePresetEditor(); });
+  }
+  const aspectOptions = Object.keys(ASPECT_POOL).map(a=>`<option value="${a}" ${a===preset.aspect?'selected':''}>${a}</option>`).join("");
+  const v = validatePreset(preset);
+  const currentPhaseId = computeCurrentPhaseId();
+  if(preset.poolMode==null) preset.poolMode = "progression";
+  if(preset.cutoffPhaseId==null) preset.cutoffPhaseId = currentPhaseId;
+  const phaseOptions = PHASES.filter(ph=>ph.id<=currentPhaseId)
+    .map(ph=>`<option value="${ph.id}" ${ph.id===preset.cutoffPhaseId?'selected':''}>Phase ${ph.id} — ${ph.title}</option>`).join("");
+  const pool = ASPECT_POOL[preset.aspect] || [];
+  function browserRows(pool, selectedList, kind){
+    const available = pool.filter(c=>cardAvailable(c, preset.poolMode, preset.cutoffPhaseId));
+    return available.map(c=>stepperRow(c.name, c.qty, qtyOf(selectedList,c.name), kind)).join("") || `<p class="deck-note">No cards catalogued yet${preset.poolMode==="progression"?" (as of Phase "+preset.cutoffPhaseId+")":""}.</p>`;
+  }
+  const aspectRows = browserRows(pool, preset.cards, "paspect");
+  const basicRows = browserRows(BASIC_POOL, preset.basics, "pbasic");
+
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">
+      <h2 style="margin:0;font-size:16px;">Edit Aspect Preset</h2>
+      <button class="btn2" id="closePresetEditor">Close</button>
+    </div>
+    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Name</label>
+    <input type="text" id="presetNameInput" value="${preset.name.replace(/"/g,'&quot;')}" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;margin-bottom:10px;">
+    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Aspect</label>
+    <select id="presetAspectSel" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;margin-bottom:10px;">${aspectOptions}</select>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+      <div style="flex:1 1 160px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Card Pool</label>
+        <select id="presetPoolModeSel" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;">
+          <option value="progression" ${preset.poolMode==="progression"?'selected':''}>Progression</option>
+          <option value="full" ${preset.poolMode==="full"?'selected':''}>Full Collection</option>
+        </select>
+      </div>
+      <div style="flex:1 1 160px;${preset.poolMode==='full'?'opacity:.4;':''}">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">As of Phase</label>
+        <select id="presetCutoffSel" ${preset.poolMode==='full'?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;">${phaseOptions}</select>
+      </div>
+    </div>
+
+    <div class="legality-box ${v.legal?'legal':'draft'}">
+      <b>${v.legal?'READY':'INCOMPLETE'}</b> · ${v.total} cards
+      ${v.reasons.length?`<ul>${v.reasons.map(r=>`<li>${r}</li>`).join("")}</ul>`:''}
+    </div>
+
+    <div class="deck-editor-section"><h4>${preset.aspect} Aspect Cards</h4>${aspectRows}</div>
+    <div class="deck-editor-section"><h4>Basic Cards</h4>${basicRows}</div>
+  </div>`;
+
+  document.getElementById("closePresetEditor").addEventListener("click", closePresetEditor);
+  document.getElementById("presetNameInput").addEventListener("change",(e)=>{
+    preset.name = e.target.value.trim() || preset.name;
+    preset.modifiedAt = new Date().toISOString();
+    saveState();
+  });
+  document.getElementById("presetAspectSel").addEventListener("change",(e)=>{
+    preset.aspect = e.target.value;
+    preset.cards = [];
+    preset.modifiedAt = new Date().toISOString();
+    saveState();
+    renderPresetEditorModal(preset);
+    renderAspectPresets();
+  });
+  document.getElementById("presetPoolModeSel").addEventListener("change",(e)=>{
+    preset.poolMode = e.target.value;
+    preset.modifiedAt = new Date().toISOString();
+    saveState();
+    renderPresetEditorModal(preset);
+    renderAspectPresets();
+  });
+  document.getElementById("presetCutoffSel").addEventListener("change",(e)=>{
+    preset.cutoffPhaseId = parseInt(e.target.value,10);
+    preset.modifiedAt = new Date().toISOString();
+    saveState();
+    renderPresetEditorModal(preset);
+    renderAspectPresets();
+  });
+  backdrop.querySelectorAll("[data-setqty]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const kind = btn.dataset.kind;
+      const list = kind==="paspect" ? preset.cards : preset.basics;
+      const poolList = kind==="paspect" ? (ASPECT_POOL[preset.aspect]||[]) : BASIC_POOL;
+      const name = btn.dataset.name;
+      const max = (poolList.find(p=>p.name===name)||{qty:0}).qty;
+      const next = Math.max(0, Math.min(max, parseInt(btn.dataset.setqty,10)));
+      setQty(list, name, next);
+      preset.modifiedAt = new Date().toISOString();
+      saveState();
+      renderPresetEditorModal(preset);
+      renderAspectPresets();
+    });
+  });
+}
+function closePresetEditor(){
+  const b = document.getElementById("presetEditorBackdrop");
+  if(b) b.remove();
+  renderAspectPresets();
+}
 
 const logDifficultySel = document.getElementById("logDifficulty");
 const heroicLevelWrap = document.getElementById("heroicLevelWrap");
@@ -1190,12 +2275,35 @@ logDifficultySel.addEventListener("change",()=>{
   heroicLevelWrap.style.display = (logDifficultySel.value==="Heroic") ? "" : "none";
 });
 
+/* ---- Saved Deck selector: appears for Custom plays, scoped to the chosen hero ---- */
+const logDeckSel = document.getElementById("logDeck");
+const savedDeckWrap = document.getElementById("savedDeckWrap");
+const logSavedDeckSel = document.getElementById("logSavedDeck");
+function refreshSavedDeckOptions(){
+  const heroId = document.getElementById("logHero").value;
+  const decks = decksForHero(heroId, false);
+  logSavedDeckSel.innerHTML = `<option value="">Custom (unsaved / not tracked as a deck)</option>` +
+    decks.map(d=>{
+      const locked = isDeckLocked(d.id);
+      return `<option value="${d.id}">${d.name}${locked?' (locked)':''}${d.status==='draft'&&!locked?' (draft)':''}</option>`;
+    }).join("");
+}
+function syncDeckTypeUI(){
+  const isCustom = logDeckSel.value === "Custom";
+  savedDeckWrap.style.display = isCustom ? "" : "none";
+  if(isCustom) refreshSavedDeckOptions();
+}
+logDeckSel.addEventListener("change", syncDeckTypeUI);
+document.getElementById("logHero").addEventListener("change", ()=>{ if(logDeckSel.value==="Custom") refreshSavedDeckOptions(); });
+syncDeckTypeUI();
+
 document.getElementById("saveLogBtn").addEventListener("click",()=>{
   const heroId = document.getElementById("logHero").value;
   const scenId = document.getElementById("logScenario").value;
   const difficulty = document.getElementById("logDifficulty").value;
   const heroicLevel = difficulty==="Heroic" ? (parseInt(document.getElementById("logHeroicLevel").value,10)||1) : null;
   const deckType = document.getElementById("logDeck").value === "Precon" ? "precon" : "custom";
+  const deckId = (deckType==="custom" && logSavedDeckSel.value) ? logSavedDeckSel.value : null;
   const result = document.getElementById("logResult").value;
   const notes = document.getElementById("logNotes").value.trim();
   const date = document.getElementById("logDate").value || new Date().toISOString().slice(0,10);
@@ -1203,10 +2311,11 @@ document.getElementById("saveLogBtn").addEventListener("click",()=>{
   // Every saved play is exactly one attempt and automatically feeds the
   // derived matrix and Klaw benchmark steps — no separate apply step, no
   // manual matrix edit, no "attempts" multiplier (v2 spec §9/§10/§11).
+  // Selecting a saved deck locks it (spec §7) — future edits create a new version.
   const play = {
     id: "p"+Date.now()+Math.random().toString(36).slice(2,7),
     date, heroId, scenarioId:scenId, difficulty, heroicLevel,
-    deckType, deckId:null, isLegacyCustom:false,
+    deckType, deckId, isLegacyCustom:false,
     result, notes, ts: Date.now()
   };
   STATE.plays.push(play);
@@ -1214,6 +2323,7 @@ document.getElementById("saveLogBtn").addEventListener("click",()=>{
 
   saveState();
   document.getElementById("logNotes").value = "";
+  refreshSavedDeckOptions();
   renderLog(); renderHome(); renderPhases();
 });
 
@@ -1230,7 +2340,7 @@ function renderLog(){
   holder.innerHTML = entries.map(e=>{
     const hero = HERO_BY_ID[e.heroId]?.name || e.heroId;
     const scen = SCEN_BY_ID[e.scenarioId]?.name || e.scenarioId;
-    const deckLabel = e.deckType==="precon" ? "Precon" : (e.isLegacyCustom ? "Custom (legacy/unknown deck)" : "Custom");
+    const deckLabel = playDeckLabel(e);
     return `<div class="log-entry">
       <div class="top">
         <div class="title">${hero} vs ${scen}</div>
@@ -1276,17 +2386,17 @@ document.getElementById("importFile").addEventListener("change",e=>{
       STATE = (parsed && Array.isArray(parsed.plays)) ? Object.assign(defaultState(), parsed) : buildV2FromV1(parsed);
       saveState();
       renderHome(); renderPhases(); renderMatrix(); renderLog();
-      alert("Backup imported.");
-    }catch(err){ alert("Could not read that file."); }
+      showAlertModal("Backup imported.");
+    }catch(err){ showAlertModal("Could not read that file."); }
   };
   reader.readAsText(file);
 });
 document.getElementById("resetBtn").addEventListener("click",()=>{
-  if(confirm("This will erase all tracked progress on this device. Continue?")){
+  showConfirmModal("This will erase all tracked progress on this device. Continue?", ()=>{
     STATE = defaultState();
     saveState();
     renderHome(); renderPhases(); renderMatrix(); renderLog();
-  }
+  });
 });
 
 /* ============================= INIT ============================= */
