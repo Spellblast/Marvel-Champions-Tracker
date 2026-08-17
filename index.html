@@ -110,8 +110,14 @@ table.matrix td.cell{width:30px;height:30px;cursor:pointer;font-weight:800;color
 table.matrix td.cell.W{background:var(--green);}
 table.matrix td.cell.L{background:var(--red);}
 table.matrix td.cell.P{background:var(--amber);color:#101010;}
+table.matrix td.cell.A{background:var(--gray);}
 table.matrix td.cell.dim{opacity:.35;}
 table.matrix tbody tr:nth-child(even) th{background:#252732;}
+
+/* Matchup detail modal */
+.modal-backdrop{position:fixed;inset:0;background:#000000aa;z-index:100;display:flex;align-items:flex-end;justify-content:center;}
+.modal-sheet{background:var(--panel);width:100%;max-width:640px;max-height:88vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px;-webkit-overflow-scrolling:touch;}
+@media (min-width:700px){.modal-backdrop{align-items:center;}.modal-sheet{border-radius:16px;}}
 
 /* Log */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
@@ -129,6 +135,7 @@ table.matrix tbody tr:nth-child(even) th{background:#252732;}
 .log-entry .badge.W{background:var(--green);color:#fff;}
 .log-entry .badge.L{background:var(--red);color:#fff;}
 .log-entry .badge.P{background:var(--amber);color:#101010;}
+.log-entry .badge.A{background:var(--gray);color:#fff;}
 .log-entry .del{background:none;border:none;color:var(--muted);font-size:16px;padding:2px 6px;}
 .log-entry .notes{margin-top:6px;color:var(--text);font-style:italic;}
 .empty{color:var(--muted);font-size:12.5px;text-align:center;padding:20px 0;}
@@ -176,6 +183,7 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
 
   <!-- HOME -->
   <section id="view-home" class="view active">
+    <div class="card" id="migrationCard" style="display:none;"></div>
     <div class="card">
       <h2>Progress</h2>
       <div class="stat-grid">
@@ -230,11 +238,12 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
         <button class="toggle-pill" id="benchmarkedOnly">Benchmarked heroes only</button>
       </div>
       <div class="legend">
-        <span><i style="background:var(--green)"></i>Win</span>
+        <span><i style="background:var(--green)"></i>Win (shows highest difficulty cleared, e.g. S1/E2/H3)</span>
         <span><i style="background:var(--red)"></i>Loss</span>
         <span><i style="background:var(--amber)"></i>Played/Special</span>
-        <span><i style="background:#00000020;border:1px solid #444"></i>Blank</span>
-        <span class="muted">Tap a cell to cycle result</span>
+        <span><i style="background:var(--gray)"></i>Abandoned</span>
+        <span><i style="background:#00000020;border:1px solid #444"></i>Not yet played</span>
+        <span class="muted">Cells are read-only — derived from your play log. Tap a cell to view details.</span>
       </div>
       <div class="matrix-wrap"><div id="matrixTableHolder"></div></div>
     </div>
@@ -252,10 +261,10 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
         <div>
           <label>Difficulty</label>
           <select id="logDifficulty">
-            <option value="Standard">Standard</option>
+            <option value="Standard I">Standard I</option>
             <option value="Standard II">Standard II</option>
             <option value="Standard III">Standard III</option>
-            <option value="Expert">Expert</option>
+            <option value="Expert I">Expert I</option>
             <option value="Expert II">Expert II</option>
             <option value="Heroic">Heroic</option>
           </select>
@@ -280,27 +289,21 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
           <label>Scenario / Villain</label>
           <select id="logScenario"></select>
         </div>
-        <div>
+        <div class="full">
           <label>Result</label>
           <select id="logResult">
             <option value="W">W — Win</option>
             <option value="L">L — Loss</option>
             <option value="P">P — Played / Special</option>
+            <option value="A">A — Abandoned</option>
           </select>
-        </div>
-        <div>
-          <label>Attempts</label>
-          <input type="number" id="logAttempts" min="1" value="1">
         </div>
         <div class="full">
           <label>Notes</label>
           <textarea id="logNotes" rows="2" placeholder="Key cards, what worked, what didn't…"></textarea>
         </div>
-        <div class="check-row">
-          <input type="checkbox" id="logApplyMatrix" checked>
-          <label for="logApplyMatrix" style="margin:0;">Apply this result to the matrix / benchmark steps</label>
-        </div>
       </div>
+      <p class="muted" style="margin-bottom:10px;">Every saved entry counts as one attempt and automatically updates the matrix and Klaw benchmark steps — there's no separate apply step.</p>
       <button class="big-btn" id="saveLogBtn">Save Entry</button>
     </div>
 
@@ -356,14 +359,15 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
         <tr><th>Code</th><th>Meaning</th><th>Use</th><th>Recommendation</th></tr>
         <tr><td><b>W</b></td><td>Win</td><td>Scenario completed</td><td>Counts as a completed pairing.</td></tr>
         <tr><td><b>L</b></td><td>Loss</td><td>Attempt recorded</td><td>Keep it — losses are part of the history.</td></tr>
-        <tr><td><b>P</b></td><td>Played / special result</td><td>Unusual scenarios or abandoned games</td><td>Use sparingly when W/L doesn't tell the story.</td></tr>
+        <tr><td><b>P</b></td><td>Played / special result</td><td>Unusual scenarios</td><td>Use sparingly when W/L doesn't tell the story.</td></tr>
+        <tr><td><b>A</b></td><td>Abandoned</td><td>Game called before a result</td><td>Keeps abandoned attempts distinct from a clean loss.</td></tr>
         <tr><td><b>Blank</b></td><td>Not yet played</td><td>Backlog</td><td>No pressure to fill immediately.</td></tr>
       </table>
     </div>
 
     <div class="card">
       <h3>Difficulty Levels</h3>
-      <p class="muted">The Log tab supports every encounter-set difficulty currently in print: Standard, Standard II (The Hood), Standard III (Age of Apocalypse), Expert, Expert II (The Hood), and Heroic (a chosen numeric level stacked on top, with no fixed cap). Expert III has not been released by Fantasy Flight Games as of this writing, so it isn't listed — it can be added easily once it exists. Only exact "Standard" and "Expert" plays against Klaw count toward the official hero benchmark steps, matching the Standard Hero Procedure above.</p>
+      <p class="muted">The Log tab supports every encounter-set difficulty currently in print: Standard I, Standard II (The Hood), Standard III (Age of Apocalypse), Expert I, Expert II (The Hood), and Heroic (a chosen numeric level stacked on top, with no fixed cap). Expert III has not been released by Fantasy Flight Games as of this writing, so it isn't listed — it can be added easily once it exists. Only exact Standard I and Expert I plays against Klaw count toward the official hero benchmark steps, matching the Standard Hero Procedure above. Klaw benchmark steps are derived from your logged plays — Standard and Expert are tracked as fully separate steps, so an Expert win no longer auto-completes the Standard step.</p>
     </div>
 
     <div class="card">
@@ -604,39 +608,171 @@ const DECKS = {
  aspectCards:[],basics:[],bonus:[]}
 };
 
-/* ============================= STATE ============================= */
-const STORE_KEY = "mcTrackerState_v1";
+/* ============================= STATE (v2) ============================= */
+// v1 key is never written to or deleted by this app anymore — it remains on
+// the device as a permanent, untouched fallback of everything tracked before
+// this update.
+const STORE_KEY_V1 = "mcTrackerState_v1";
+const STORE_KEY_V1_BACKUP = "mcTrackerState_v1_backup";
+const STORE_KEY = "mcTrackerState_v2";
+
 function defaultState(){
   return {
-    heroBenchmarks: {}, // id -> {preconStd,preconExp,customExp,notes}
+    stateSchemaVersion: 2,
+    heroBenchmarks: {}, // id -> {notes}  (preconStd/preconExp/customExp are now DERIVED from plays, not stored)
     scenarioUnlocked: {}, // id -> bool
     campaignComplete: {}, // phaseId -> bool
     fneOrder: {}, // scenarioId -> order number (1-5) for Fear No Evil sandbox
     fneHero: "", // chosen campaign hero id
-    matrix: {}, // "heroId|scenarioId" -> "W"|"L"|"P"
-    log: [] // {id,date,heroId,scenarioId,difficulty,heroicLevel,deck,result,attempts,notes,ts}
+    decks: [], // reserved for the v2 deckbuilder (Phase 2)
+    aspectPresets: [], // reserved for the v2 deckbuilder (Phase 2)
+    plays: [], // {id,date,heroId,scenarioId,difficulty,heroicLevel,deckType,deckId,isLegacyCustom,result,notes,ts} — one record per attempt
+    legacyMigration: null // audit-only archive of the old matrix/benchmark flags, set once during v1->v2 migration
   };
 }
+
+// Pure conversion: v1-shaped object -> v2-shaped object + report. Used both by
+// the automatic first-launch migration and by importing an old backup file.
+function buildV2FromV1(v1raw){
+  const v1Default = { heroBenchmarks:{}, scenarioUnlocked:{}, campaignComplete:{}, fneOrder:{}, fneHero:"", matrix:{}, log:[] };
+  const v1 = Object.assign({}, v1Default, v1raw||{});
+  const v2 = defaultState();
+
+  v2.scenarioUnlocked = Object.assign({}, v1.scenarioUnlocked);
+  v2.campaignComplete = Object.assign({}, v1.campaignComplete);
+  v2.fneOrder = Object.assign({}, v1.fneOrder);
+  v2.fneHero = v1.fneHero || "";
+
+  // Carry forward manual benchmark notes only — the W flags become derived.
+  Object.keys(v1.heroBenchmarks||{}).forEach(id=>{
+    const b = v1.heroBenchmarks[id];
+    if(b && b.notes) v2.heroBenchmarks[id] = { notes: b.notes };
+  });
+
+  // One v1 log entry -> exactly one v2 play record. The old "attempts" count
+  // is dropped rather than expanded into multiple records, since it can't
+  // prove the details of each underlying attempt (per migration spec).
+  v2.plays = (v1.log||[]).map(e=>{
+    const deckType = e.deck === "Precon" ? "precon" : "custom";
+    return {
+      id: e.id || ("e"+(e.ts||Date.now())+Math.random().toString(36).slice(2,6)),
+      date: e.date,
+      heroId: e.heroId,
+      scenarioId: e.scenarioId,
+      difficulty: e.difficulty,
+      heroicLevel: e.heroicLevel || null,
+      deckType,
+      deckId: null,
+      isLegacyCustom: deckType === "custom",
+      result: e.result,
+      notes: e.notes || "",
+      ts: e.ts || Date.now()
+    };
+  });
+
+  // Archive the old mutable matrix/benchmark flags for audit, and flag any
+  // manually-entered matrix Win that has no matching logged win — those can't
+  // be reproduced by the new derived matrix and the user should know why.
+  const v1MatrixWins = Object.entries(v1.matrix||{}).filter(([,v])=>v==="W").map(([k])=>k);
+  const derivedWinKeys = new Set(v2.plays.filter(p=>p.result==="W").map(p=>p.heroId+"|"+p.scenarioId));
+  const unreproducedMatrixWins = v1MatrixWins.filter(k=>!derivedWinKeys.has(k));
+
+  v2.legacyMigration = {
+    migratedAt: new Date().toISOString(),
+    playsConverted: v2.plays.length,
+    v1Matrix: v1.matrix,
+    v1HeroBenchmarkFlags: Object.fromEntries(Object.entries(v1.heroBenchmarks||{}).map(([id,b])=>[id,{preconStd:!!b.preconStd,preconExp:!!b.preconExp,customExp:!!b.customExp}])),
+    unreproducedMatrixWins,
+    acknowledged: false
+  };
+
+  return v2;
+}
+
+function migrateV1ToV2(rawV1){
+  let v1 = null;
+  try{ v1 = JSON.parse(rawV1); }catch(e){ v1 = null; }
+  // Belt-and-braces safety net: freeze a copy of the raw v1 payload under its
+  // own key, separate from the live v1 key, and never overwrite it again.
+  if(!localStorage.getItem(STORE_KEY_V1_BACKUP)){
+    localStorage.setItem(STORE_KEY_V1_BACKUP, rawV1);
+  }
+  const v2 = buildV2FromV1(v1);
+  localStorage.setItem(STORE_KEY, JSON.stringify(v2));
+  return v2;
+}
+
 let STATE = loadState();
 function loadState(){
   try{
-    const raw = localStorage.getItem(STORE_KEY);
-    if(!raw) return defaultState();
-    const parsed = JSON.parse(raw);
-    return Object.assign(defaultState(), parsed);
+    const rawV2 = localStorage.getItem(STORE_KEY);
+    if(rawV2){
+      const parsed = JSON.parse(rawV2);
+      return Object.assign(defaultState(), parsed);
+    }
+    const rawV1 = localStorage.getItem(STORE_KEY_V1);
+    if(rawV1) return migrateV1ToV2(rawV1);
+    return defaultState();
   }catch(e){ return defaultState(); }
 }
 function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }
 
-function heroBench(id){
-  if(!STATE.heroBenchmarks[id]) STATE.heroBenchmarks[id] = {preconStd:false,preconExp:false,customExp:false,notes:""};
+/* ---- benchmark notes (manual free-text, unrelated to derived W/L/P) ---- */
+function heroBenchNotes(id){
+  if(!STATE.heroBenchmarks[id]) STATE.heroBenchmarks[id] = {notes:""};
   return STATE.heroBenchmarks[id];
 }
-function isHeroDone(id){ const b=STATE.heroBenchmarks[id]; return !!(b && b.preconStd && b.preconExp && b.customExp); }
+
+/* ---- difficulty helpers ---- */
+// Legacy v1 log entries used "Standard"/"Expert" with no tier suffix. Normalize
+// on read so old and new records compare correctly without rewriting history.
+function normDifficulty(d){
+  if(d==="Standard") return "Standard I";
+  if(d==="Expert") return "Expert I";
+  return d;
+}
+const DIFF_ORDER = ["Standard I","Standard II","Standard III","Expert I","Expert II","Heroic"];
+function diffRank(p){
+  const base = DIFF_ORDER.indexOf(normDifficulty(p.difficulty));
+  return [base<0?0:base, normDifficulty(p.difficulty)==="Heroic" ? (p.heroicLevel||1) : 0];
+}
+function cmpRank(a,b){ return a[0]!==b[0] ? a[0]-b[0] : a[1]-b[1]; }
+function formatDifficulty(e){
+  const d = normDifficulty(e.difficulty);
+  return (d==="Heroic" && e.heroicLevel) ? ("Heroic "+e.heroicLevel) : d;
+}
+function diffShortLabel(p){
+  const d = normDifficulty(p.difficulty);
+  const map = {"Standard I":"S1","Standard II":"S2","Standard III":"S3","Expert I":"E1","Expert II":"E2"};
+  if(d==="Heroic") return "H"+(p.heroicLevel||1);
+  return map[d] || d;
+}
+
+/* ---- derived benchmarks (Klaw steps) — spec: no cross-implication ---- */
+function computeHeroBenchmarks(heroId){
+  const wins = STATE.plays.filter(p=>p.heroId===heroId && p.scenarioId==="klaw" && p.result==="W");
+  const preconStd = wins.some(p=>normDifficulty(p.difficulty)==="Standard I" && p.deckType==="precon");
+  const preconExp = wins.some(p=>normDifficulty(p.difficulty)==="Expert I" && p.deckType==="precon");
+  const customExp = wins.some(p=>normDifficulty(p.difficulty)==="Expert I" && p.deckType==="custom");
+  return { preconStd, preconExp, customExp };
+}
+function isHeroDone(id){ const b=computeHeroBenchmarks(id); return b.preconStd && b.preconExp && b.customExp; }
 function isScenarioUnlocked(id){ return !!STATE.scenarioUnlocked[id]; }
 function matrixKey(h,s){ return h+"|"+s; }
-function cycleResult(cur){ return cur==="" ? "W" : cur==="W" ? "L" : cur==="L" ? "P" : ""; }
-function formatDifficulty(e){ return (e.difficulty==="Heroic" && e.heroicLevel) ? ("Heroic "+e.heroicLevel) : e.difficulty; }
+
+/* ---- derived matrix cell: highest difficulty successfully cleared ---- */
+function derivedMatrixCell(heroId, scenarioId){
+  const plays = STATE.plays.filter(p=>p.heroId===heroId && p.scenarioId===scenarioId);
+  if(!plays.length) return null;
+  const wins = plays.filter(p=>p.result==="W");
+  if(wins.length){
+    let best = wins[0];
+    wins.forEach(p=>{ if(cmpRank(diffRank(p),diffRank(best))>0) best=p; });
+    return { result:"W", play:best };
+  }
+  const last = plays.slice().sort((a,b)=>b.ts-a.ts)[0];
+  return { result:last.result, play:last };
+}
 
 /* ============================= NAV ============================= */
 document.querySelectorAll("nav.tabs button").forEach(btn=>{
@@ -661,11 +797,13 @@ function renderHome(){
   const heroesDone = HEROES.filter(h=>isHeroDone(h.id)).length;
   const scenariosDone = SCENARIOS.filter(s=>isScenarioUnlocked(s.id)).length;
   const totalCells = HEROES.length * SCENARIOS.length;
-  const filledCells = Object.values(STATE.matrix).filter(v=>v).length;
+  const filledCells = new Set(STATE.plays.map(p=>matrixKey(p.heroId,p.scenarioId))).size;
 
   document.getElementById("statHeroesDone").textContent = heroesDone+"/"+HEROES.length;
   document.getElementById("statScenariosDone").textContent = scenariosDone+"/"+SCENARIOS.length;
   document.getElementById("statMatrixDone").textContent = filledCells+"/"+totalCells;
+
+  renderMigrationCard();
 
   // current phase = first phase not fully complete
   let current = PHASES[PHASES.length-1];
@@ -680,6 +818,40 @@ function renderHome(){
   document.getElementById("progMatrix").style.width = (filledCells/totalCells*100)+"%";
   document.getElementById("currentPhaseSummary").textContent = "Phase "+current.id+" — "+current.title+" ("+current.date+")";
   document.getElementById("jumpCurrentPhase").onclick = ()=>{ showView("phases"); setTimeout(()=>openPhase(current.id),50); };
+}
+
+function renderMigrationCard(){
+  const card = document.getElementById("migrationCard");
+  const m = STATE.legacyMigration;
+  if(!m || m.acknowledged){ card.style.display = "none"; return; }
+  card.style.display = "";
+  let html = `<h3>Upgraded to a new data format ✅</h3>
+    <p class="muted">Your previous tracker data was migrated on ${new Date(m.migratedAt).toLocaleString()}. ${m.playsConverted} logged play${m.playsConverted===1?"":"s"} carried over safely. Nothing was deleted — your original data is still saved on this device as a backup.</p>`;
+  if(m.unreproducedMatrixWins && m.unreproducedMatrixWins.length){
+    const list = m.unreproducedMatrixWins.map(k=>{
+      const [h,s] = k.split("|");
+      return (HERO_BY_ID[h]?.name||h) + " vs " + (SCEN_BY_ID[s]?.name||s);
+    }).join(", ");
+    html += `<p class="muted" style="color:var(--amber);">${m.unreproducedMatrixWins.length} old matrix win${m.unreproducedMatrixWins.length===1?"":"s"} had been entered directly on the matrix (not from a logged play) and couldn't be carried into the new derived matrix: ${list}. Log a play for these if you'd like them to show again.</p>`;
+  }
+  html += `<button class="btn2" id="exportV1BackupBtn">Export original pre-upgrade backup</button> <button class="btn2" id="ackMigrationBtn">Got it, dismiss</button>`;
+  card.innerHTML = html;
+  const exp = document.getElementById("exportV1BackupBtn");
+  if(exp) exp.addEventListener("click",()=>{
+    const raw = localStorage.getItem(STORE_KEY_V1_BACKUP) || localStorage.getItem(STORE_KEY_V1) || "{}";
+    const blob = new Blob([raw], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "marvel-champions-tracker-pre-upgrade-backup.json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+  const ack = document.getElementById("ackMigrationBtn");
+  if(ack) ack.addEventListener("click",()=>{
+    STATE.legacyMigration.acknowledged = true;
+    saveState();
+    renderMigrationCard();
+  });
 }
 
 /* ============================= PHASES ============================= */
@@ -732,15 +904,17 @@ function buildPhaseBody(ph){
     html += `<h4 style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Heroes Entering</h4>`;
     html += `<div class="chip-row">`;
     ph.heroes.forEach(([id,name])=>{
-      const b = heroBench(id);
+      const b = computeHeroBenchmarks(id);
+      const notesVal = heroBenchNotes(id).notes || "";
       html += `<div class="hero-card">
         <div class="name">${name}</div>
         <div class="step-toggles">
-          <div class="step-toggle ${b.preconStd?'on':''}" data-hero="${id}" data-step="preconStd">Precon Std Klaw</div>
-          <div class="step-toggle ${b.preconExp?'on':''}" data-hero="${id}" data-step="preconExp">Precon Exp Klaw</div>
-          <div class="step-toggle ${b.customExp?'on':''}" data-hero="${id}" data-step="customExp">Custom Exp Klaw</div>
+          <div class="step-toggle ${b.preconStd?'on':''}" title="Derived from a logged win: Klaw, Standard I, Precon">Precon Std Klaw</div>
+          <div class="step-toggle ${b.preconExp?'on':''}" title="Derived from a logged win: Klaw, Expert I, Precon">Precon Exp Klaw</div>
+          <div class="step-toggle ${b.customExp?'on':''}" title="Derived from a logged win: Klaw, Expert I, Custom">Custom Exp Klaw</div>
         </div>
-        <textarea class="hero-notes" data-hero="${id}" placeholder="Benchmark notes (aspect, key cards, setup speed…)" rows="2" style="width:100%;margin-top:8px;background:#00000030;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px;font-size:11.5px;">${b.notes||""}</textarea>
+        <p class="muted" style="margin:6px 0 0;font-size:10.5px;">Steps are derived from Log Play — log a matching Klaw win to complete a step.</p>
+        <textarea class="hero-notes" data-hero="${id}" placeholder="Benchmark notes (aspect, key cards, setup speed…)" rows="2" style="width:100%;margin-top:8px;background:#00000030;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px;font-size:11.5px;">${notesVal}</textarea>
       </div>`;
     });
     html += `</div>`;
@@ -783,18 +957,10 @@ function buildPhaseBody(ph){
 }
 
 function wirePhaseBody(item, ph){
-  item.querySelectorAll(".step-toggle").forEach(el=>{
-    el.addEventListener("click",()=>{
-      const hid = el.dataset.hero, step = el.dataset.step;
-      const b = heroBench(hid);
-      b[step] = !b[step];
-      saveState();
-      renderPhases(); renderHome();
-    });
-  });
+  // Step toggles are now read-only, derived indicators (see spec §11) — no click handler.
   item.querySelectorAll(".hero-notes").forEach(el=>{
     el.addEventListener("change",()=>{
-      heroBench(el.dataset.hero).notes = el.value;
+      heroBenchNotes(el.dataset.hero).notes = el.value;
       saveState();
     });
   });
@@ -840,10 +1006,11 @@ function renderMatrix(){
   heroes.forEach(h=>{
     html += `<tr><th>${h.name}</th>`;
     scenarios.forEach(s=>{
-      const key = matrixKey(h.id,s.id);
-      const val = STATE.matrix[key] || "";
+      const cell = derivedMatrixCell(h.id,s.id);
       const dim = !isScenarioUnlocked(s.id) ? "dim" : "";
-      html += `<td class="cell ${val} ${dim}" data-h="${h.id}" data-s="${s.id}">${val}</td>`;
+      const cls = cell ? cell.result : "";
+      const label = cell ? (cell.result==="W" ? diffShortLabel(cell.play) : cell.result) : "";
+      html += `<td class="cell ${cls} ${dim}" data-h="${h.id}" data-s="${s.id}">${label}</td>`;
     });
     html += `</tr>`;
   });
@@ -853,13 +1020,77 @@ function renderMatrix(){
 
   document.querySelectorAll("table.matrix td.cell").forEach(td=>{
     td.addEventListener("click",()=>{
-      const key = matrixKey(td.dataset.h, td.dataset.s);
-      const next = cycleResult(STATE.matrix[key]||"");
-      STATE.matrix[key] = next;
+      openMatchupDetail(td.dataset.h, td.dataset.s);
+    });
+  });
+}
+
+/* ---- Matchup detail (read-only, derived from the play log) ---- */
+function openMatchupDetail(heroId, scenarioId){
+  const hero = HERO_BY_ID[heroId], scen = SCEN_BY_ID[scenarioId];
+  if(!hero || !scen) return;
+  const plays = STATE.plays.filter(p=>p.heroId===heroId && p.scenarioId===scenarioId).slice().sort((a,b)=>b.ts-a.ts);
+
+  const tiers = ["Standard I","Standard II","Standard III","Expert I","Expert II"];
+  const tierRows = tiers.map(t=>{
+    const tp = plays.filter(p=>normDifficulty(p.difficulty)===t);
+    const wins = tp.filter(p=>p.result==="W").length;
+    const losses = tp.filter(p=>p.result==="L").length;
+    return `<tr><td>${t}</td><td>${tp.length}</td><td>${wins}</td><td>${losses}</td><td>${wins>0?'Yes':'—'}</td></tr>`;
+  }).join("");
+
+  const heroicPlays = plays.filter(p=>normDifficulty(p.difficulty)==="Heroic");
+  const heroicWins = heroicPlays.filter(p=>p.result==="W");
+  const highestHeroic = heroicWins.length ? Math.max(...heroicWins.map(p=>p.heroicLevel||1)) : null;
+
+  const totalWins = plays.filter(p=>p.result==="W").length;
+  const winRate = plays.length ? Math.round(totalWins/plays.length*100) : 0;
+  const best = derivedMatrixCell(heroId,scenarioId);
+
+  const historyRows = plays.map(p=>{
+    const deckLabel = p.deckType==="precon" ? "Precon" : (p.isLegacyCustom ? "Custom (legacy/unknown deck)" : "Custom");
+    return `<div class="log-entry">
+      <div class="top">
+        <div class="title">${formatDifficulty(p)} · ${deckLabel}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="badge ${p.result}">${p.result}</span>
+          <button class="del" data-delplay="${p.id}">✕</button>
+        </div>
+      </div>
+      <div class="meta">${p.date}</div>
+      ${p.notes ? `<div class="notes">${p.notes}</div>` : ""}
+    </div>`;
+  }).join("") || `<p class="empty">No plays logged for this pairing yet.</p>`;
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;">
+        <h2 style="margin:0;font-size:16px;">${hero.name} vs ${scen.name}</h2>
+        <button class="btn2" id="closeMatchupModal">Close</button>
+      </div>
+      <p class="muted">Highest cleared: <b style="color:#fff;">${best && best.result==='W' ? formatDifficulty(best.play) : 'Not yet cleared'}</b> · Total plays: ${plays.length} · Wins: ${totalWins} · Win rate: ${winRate}%</p>
+      <table class="guide-table" style="margin-top:10px;">
+        <tr><th>Difficulty</th><th>Attempts</th><th>Wins</th><th>Losses</th><th>Cleared</th></tr>
+        ${tierRows}
+        <tr><td>Heroic</td><td>${heroicPlays.length}</td><td>${heroicWins.length}</td><td>${heroicPlays.filter(p=>p.result==='L').length}</td><td>${highestHeroic!=null?('Level '+highestHeroic):'—'}</td></tr>
+      </table>
+      <h3 style="margin-top:14px;">History</h3>
+      ${historyRows}
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) backdrop.remove(); });
+  backdrop.querySelector("#closeMatchupModal").addEventListener("click",()=>backdrop.remove());
+  backdrop.querySelectorAll("[data-delplay]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      STATE.plays = STATE.plays.filter(p=>p.id!==btn.dataset.delplay);
       saveState();
-      td.className = "cell " + next + (!isScenarioUnlocked(td.dataset.s)?" dim":"");
-      td.textContent = next;
-      renderHome();
+      backdrop.remove();
+      renderMatrix(); renderHome(); renderPhases();
+      if(document.getElementById("view-log").classList.contains("active")) renderLog();
+      openMatchupDetail(heroId, scenarioId);
     });
   });
 }
@@ -964,53 +1195,42 @@ document.getElementById("saveLogBtn").addEventListener("click",()=>{
   const scenId = document.getElementById("logScenario").value;
   const difficulty = document.getElementById("logDifficulty").value;
   const heroicLevel = difficulty==="Heroic" ? (parseInt(document.getElementById("logHeroicLevel").value,10)||1) : null;
-  const deck = document.getElementById("logDeck").value;
+  const deckType = document.getElementById("logDeck").value === "Precon" ? "precon" : "custom";
   const result = document.getElementById("logResult").value;
-  const attempts = parseInt(document.getElementById("logAttempts").value,10) || 1;
   const notes = document.getElementById("logNotes").value.trim();
   const date = document.getElementById("logDate").value || new Date().toISOString().slice(0,10);
-  const apply = document.getElementById("logApplyMatrix").checked;
 
-  const entry = { id: "e"+Date.now(), date, heroId, scenarioId:scenId, difficulty, heroicLevel, deck, result, attempts, notes, ts: Date.now() };
-  STATE.log.unshift(entry);
+  // Every saved play is exactly one attempt and automatically feeds the
+  // derived matrix and Klaw benchmark steps — no separate apply step, no
+  // manual matrix edit, no "attempts" multiplier (v2 spec §9/§10/§11).
+  const play = {
+    id: "p"+Date.now()+Math.random().toString(36).slice(2,7),
+    date, heroId, scenarioId:scenId, difficulty, heroicLevel,
+    deckType, deckId:null, isLegacyCustom:false,
+    result, notes, ts: Date.now()
+  };
+  STATE.plays.push(play);
+  STATE.scenarioUnlocked[scenId] = true;
 
-  if(apply){
-    const key = matrixKey(heroId,scenId);
-    // Once a Win is recorded for a hero/scenario pairing, later log entries
-    // for that same pairing no longer overwrite the matrix cell.
-    if(STATE.matrix[key] !== "W"){
-      STATE.matrix[key] = result;
-    }
-    STATE.scenarioUnlocked[scenId] = true;
-    if(scenId === "klaw"){
-      const b = heroBench(heroId);
-      if(difficulty==="Standard" && deck==="Precon") b.preconStd = true;
-      if(difficulty==="Expert" && deck==="Precon"){
-        b.preconExp = true;
-        // An Expert precon win implies the Standard precon step would clear too.
-        if(result==="W") b.preconStd = true;
-      }
-      if(difficulty==="Expert" && deck==="Custom") b.customExp = true;
-    }
-  }
   saveState();
   document.getElementById("logNotes").value = "";
-  renderLog(); renderHome();
+  renderLog(); renderHome(); renderPhases();
 });
 
 function renderLog(){
   const holder = document.getElementById("logList");
   const q = (document.getElementById("logSearch").value||"").toLowerCase();
-  const entries = STATE.log.filter(e=>{
+  const entries = STATE.plays.filter(e=>{
     if(!q) return true;
     const hero = HERO_BY_ID[e.heroId]?.name||"";
     const scen = SCEN_BY_ID[e.scenarioId]?.name||"";
     return (hero+" "+scen+" "+e.notes).toLowerCase().includes(q);
-  });
+  }).slice().sort((a,b)=>b.ts-a.ts);
   if(!entries.length){ holder.innerHTML = `<p class="empty">No plays logged yet.</p>`; return; }
   holder.innerHTML = entries.map(e=>{
     const hero = HERO_BY_ID[e.heroId]?.name || e.heroId;
     const scen = SCEN_BY_ID[e.scenarioId]?.name || e.scenarioId;
+    const deckLabel = e.deckType==="precon" ? "Precon" : (e.isLegacyCustom ? "Custom (legacy/unknown deck)" : "Custom");
     return `<div class="log-entry">
       <div class="top">
         <div class="title">${hero} vs ${scen}</div>
@@ -1019,14 +1239,14 @@ function renderLog(){
           <button class="del" data-del="${e.id}">✕</button>
         </div>
       </div>
-      <div class="meta">${e.date} · ${formatDifficulty(e)} · ${e.deck} deck · ${e.attempts} attempt${e.attempts>1?'s':''}</div>
+      <div class="meta">${e.date} · ${formatDifficulty(e)} · ${deckLabel}</div>
       ${e.notes ? `<div class="notes">${e.notes}</div>` : ""}
     </div>`;
   }).join("");
   holder.querySelectorAll("[data-del]").forEach(btn=>{
     btn.addEventListener("click",()=>{
-      STATE.log = STATE.log.filter(e=>e.id!==btn.dataset.del);
-      saveState(); renderLog();
+      STATE.plays = STATE.plays.filter(e=>e.id!==btn.dataset.del);
+      saveState(); renderLog(); renderMatrix(); renderHome(); renderPhases();
     });
   });
 }
@@ -1051,7 +1271,9 @@ document.getElementById("importFile").addEventListener("change",e=>{
   reader.onload = ()=>{
     try{
       const parsed = JSON.parse(reader.result);
-      STATE = Object.assign(defaultState(), parsed);
+      // Accept both current (v2, has "plays") and old (v1, has "log") backup
+      // files so an older export can still be restored safely.
+      STATE = (parsed && Array.isArray(parsed.plays)) ? Object.assign(defaultState(), parsed) : buildV2FromV1(parsed);
       saveState();
       renderHome(); renderPhases(); renderMatrix(); renderLog();
       alert("Backup imported.");
