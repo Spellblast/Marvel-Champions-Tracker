@@ -182,6 +182,19 @@ table.matrix tbody tr:nth-child(even) th{background:#252732;}
 .qtybtns button.active{background:var(--red);border-color:var(--red);color:#fff;}
 .qtybtns button.remove{width:auto;padding:0 8px;font-size:11px;}
 
+.card-row .cmeta{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
+.res-dot{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;font-size:9px;font-weight:800;color:#fff;flex:0 0 auto;line-height:1;}
+.res-dot.res-p{background:var(--red);}
+.res-dot.res-e{background:var(--amber);color:#171200;}
+.res-dot.res-m{background:var(--blue);}
+.res-dot.res-w{background:conic-gradient(var(--red),var(--amber),var(--blue),var(--red));}
+.cost-badge{min-width:16px;text-align:center;font-weight:800;color:var(--muted);font-size:11px;}
+.type-group-header{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 4px;padding-top:8px;border-top:1px solid var(--border);}
+.type-group-header:first-child{margin-top:0;padding-top:0;border-top:none;}
+.browsetabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.browsetabs.typetabs .deck-subtab{padding:5px 11px;font-size:11px;}
+.muted-count{color:var(--muted);font-weight:400;font-size:12px;}
+
 .legality-box{border-radius:10px;padding:10px 12px;margin:12px 0;font-size:12.5px;}
 .legality-box.legal{background:#0f2c1c;border:1px solid var(--green);}
 .legality-box.draft{background:#2c2410;border:1px solid var(--amber);}
@@ -249,11 +262,17 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
 
     <div class="card">
       <h3>Backup</h3>
-      <p class="muted">Your data is saved in this browser only. Export a backup before clearing Safari data or switching devices.</p>
+      <p class="muted">Your data is saved in this browser only, unless you connect GitHub Sync below. Export a backup before clearing Safari data or switching devices.</p>
       <button class="btn2" id="exportBtn">Export backup (JSON)</button>
       <button class="btn2" id="importBtn">Import backup</button>
       <input type="file" id="importFile" accept="application/json" style="display:none;">
       <button class="btn2" id="resetBtn" style="color:#e8828a;">Reset all data</button>
+    </div>
+
+    <div class="card" id="githubSyncCard">
+      <h3>GitHub Sync</h3>
+      <p class="muted" id="githubSyncStatusText">Not connected — your data is stored in this browser only.</p>
+      <div id="githubSyncButtons"></div>
     </div>
   </section>
 
@@ -271,8 +290,7 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
       <div class="matrix-controls">
         <input type="text" id="heroFilter" placeholder="Filter heroes…">
         <input type="text" id="scenarioFilter" placeholder="Filter scenarios…">
-        <button class="toggle-pill" id="unlockedOnly">Unlocked scenarios only</button>
-        <button class="toggle-pill" id="benchmarkedOnly">Benchmarked heroes only</button>
+        <button class="toggle-pill" id="matrixScopeToggle">Show Full Matrix</button>
       </div>
       <div class="legend">
         <span><i style="background:var(--green)"></i>Win (shows highest difficulty cleared, e.g. S1/E2/H3)</span>
@@ -652,20 +670,34 @@ const DECKS = {
  bonus:[["Beat Cop","Justice",3],["Inspiring Presence","Leadership",3],["Electrostatic Armor","Protection",3]]},
 "spiderman-peter":{aspect:"Justice",confidence:"partial",coreSet:true,
  hero:[["Black Cat",1],["Backflip",2],["Enhanced Spider-Sense",2],["Swinging Web Kick",3],["Aunt May",1],["Spider-Tracer",2],["Web-Shooter",2],["Webbed Up",2]],
- aspectCards:[],basics:[],bonus:[]},
+ aspectCards:[["Daredevil: Matt Murdock",1],["Jessica Jones",1],["For Justice!",2],["Great Responsibility",2],["Heroic Intuition",2],["Interrogation Room",2],["Surveillance Team",2],["The Power of Justice",2]],
+ basics:[["Nick Fury",1],["Mockingbird: Bobbi Morse",1],["Avengers Mansion",1],["Helicarrier",1],["Energy",1],["Genius",1],["Strength",1],["First Aid",2],["Haymaker",2],["Emergency",2],["Tenacity",2]],
+ bonus:[],
+ note:"aspectCards/basics quantities are a best-effort reconstruction from the shared Core Set Justice/basic card pool (community + rules knowledge), not individually API-verified copy-by-copy like the hero-specific cards above — treat as close but unconfirmed."},
 "captainmarvel":{aspect:"Leadership",confidence:"partial",coreSet:true,
  hero:[["Spider-Woman",1],["Crisis Interdiction",3],["Photonic Blast",3],["Energy Absorption",2],["Alpha Flight Station",1],["Captain Marvel's Helmet",1],["Cosmic Flight",2],["Energy Channel",2]],
- aspectCards:[],basics:[],bonus:[]},
+ aspectCards:[["Hawkeye: Clint Barton",1],["Maria Hill",1],["Vision",1],["Get Ready",2],["Inspired",2],["Lead from the Front",2],["Make the Call",3],["The Triskelion",1],["The Power of Leadership",2]],
+ basics:[["Nick Fury",1],["Mockingbird: Bobbi Morse",1],["Avengers Mansion",1],["Helicarrier",1],["Energy",1],["Genius",1],["Strength",1],["First Aid",2],["Haymaker",2],["Emergency",2],["Tenacity",2]],
+ bonus:[],
+ note:"aspectCards/basics quantities are a best-effort reconstruction from the shared Core Set Leadership/basic card pool, not individually API-verified — treat as close but unconfirmed."},
 "shehulk":{aspect:"Aggression",confidence:"partial",coreSet:true,
  hero:[["Hellcat",1],["Gamma Slam",1],["Ground Stomp",2],["Legal Practice",2],["One-Two Punch",3],["Split Personality",1],["Superhuman Law Division",1],["Focused Rage",2],["Superhuman Strength",2]],
- aspectCards:[],basics:[],bonus:[]},
+ aspectCards:[["Hulk: Bruce Banner",1],["Tigra: Greer Grant Nelson",1],["Chase Them Down",2],["Relentless Assault",2],["Uppercut",3],["Combat Training",2],["Tac Team",3],["The Power of Aggression",2]],
+ basics:[["Nick Fury",1],["Mockingbird: Bobbi Morse",1],["Avengers Mansion",1],["Helicarrier",1],["Energy",1],["Genius",1],["Strength",1],["First Aid",2],["Haymaker",2],["Emergency",2],["Tenacity",2]],
+ bonus:[],
+ note:"Shares the Aggression aspect with Iron Man — the Core Set box only contains enough Aggression cards to build one of these two precons at a time. aspectCards/basics quantities are a best-effort reconstruction, not individually API-verified."},
 "ironman":{aspect:"Aggression",confidence:"partial",coreSet:true,
  hero:[["War Machine",1],["Repulsor Blast",3],["Supersonic Punch",2],["Pepper Potts",1],["Stark Tower",1],["Arc Reactor",1],["Mark V Armor",1],["Mark V Helmet",1],["Powered Gauntlets",2],["Rocket Boots",2]],
- aspectCards:[],basics:[],bonus:[],
- note:"Shares the Aggression aspect with She-Hulk — the Core Set box only contains enough Aggression cards to build one of these two precons at a time."},
+ aspectCards:[["Hulk: Bruce Banner",1],["Tigra: Greer Grant Nelson",1],["Chase Them Down",2],["Relentless Assault",2],["Uppercut",3],["Combat Training",2],["Tac Team",3],["The Power of Aggression",2]],
+ basics:[["Nick Fury",1],["Mockingbird: Bobbi Morse",1],["Avengers Mansion",1],["Helicarrier",1],["Energy",1],["Genius",1],["Strength",1],["First Aid",2],["Haymaker",2],["Emergency",2],["Tenacity",2]],
+ bonus:[],
+ note:"Shares the Aggression aspect with She-Hulk — the Core Set box only contains enough Aggression cards to build one of these two precons at a time. aspectCards/basics quantities are a best-effort reconstruction, not individually API-verified."},
 "blackpanther-tchalla":{aspect:"Protection",confidence:"partial",coreSet:true,
- hero:[["Shuri",1],["Ancestral Knowledge",1],["Wakanda Forever!",4],["Vibranium",3],["The Golden City",1],["Energy Daggers",1],["Panther Claws",1],["Tactical Genius",1],["Vibranium Suit",1]],
- aspectCards:[],basics:[],bonus:[]},
+ hero:[["Shuri",1],["Ancestral Knowledge",1],["Wakanda Forever!",5],["Vibranium",3],["The Golden City",1],["Energy Daggers",1],["Panther Claws",1],["Tactical Genius",1],["Vibranium Suit",1]],
+ aspectCards:[["Black Widow: Natasha Romanoff",1],["Luke Cage",1],["Armored Vest",2],["Counter-Punch",2],["Get Behind Me!",2],["Indomitable",2],["Med Team",2],["The Power of Protection",2]],
+ basics:[["Nick Fury",1],["Mockingbird: Bobbi Morse",1],["Avengers Mansion",1],["Helicarrier",1],["Energy",1],["Genius",1],["Strength",1],["First Aid",2],["Haymaker",2],["Emergency",2],["Tenacity",2]],
+ bonus:[],
+ note:"aspectCards/basics quantities are a best-effort reconstruction from the shared Core Set Protection/basic card pool, not individually API-verified — treat as close but unconfirmed."},
 "antman":{aspect:"Leadership",confidence:"exact",
  hero:[["Wasp: Nadia Van Dyne",1],["Giant Stomp",2],["Hive Mind",1],["Resize",2],["Pym Particles",2],["Army of Ants",3],["Ant-Man's Helmet",1],["Giant Strength",2],["Wrist Gauntlets",1]],
  aspectCards:[["Ant-Man: Hank Pym",1],["Giant-Man",1],["Ronin",1],["Stinger: Cassie Lang",1],["Call for Aid",3],["Moxie",3],["Power Gloves",3],["Reinforced Suit",3]],
@@ -812,7 +844,8 @@ const DECKS = {
  basics:[["Colossus",1],["Weapon X",1],["Fastball Special",1],["Longshot",1]],
  bonus:[["Command Center","Justice",3]]},
 "storm":{aspect:"Leadership",confidence:"exact",
- hero:[["Clear Skies",1],["Hurricane",1],["Thunderstorm",1],["Blizzard",1],["Storm's Crown",1],["Storm's Cape",1],["Ororo's Garden",1],["Weather Goddess",3],["Torrential Rain",3],["Lightning Bolt",2],["Flash Freeze",2],["Blast of Wind",2]],
+ hero:[["Storm's Crown",1],["Storm's Cape",1],["Ororo's Garden",1],["Weather Goddess",3],["Torrential Rain",3],["Lightning Bolt",2],["Flash Freeze",2],["Blast of Wind",2]],
+ extra:{label:"Weather Deck subset (optional, 1 copy each)",cards:[["Clear Skies",1],["Hurricane",1],["Thunderstorm",1],["Blizzard",1]]},
  aspectCards:[["Havok",1],["Mirage",1],["Gentle",1],["Pixie",1],["Uncanny X-Men",3],["Leadership Skill",3],["\"To Me, My X-Men!\"",3],["Effective Leadership",2]],
  basics:[["Forge",1],["The X-Jet",1],["Utopia",1],["X-Mansion",1],["Endurance",3]],
  bonus:[["Hangar Bay","Protection",3]]},
@@ -851,9 +884,9 @@ const DECKS = {
  aspectCards:[["Boom Boom",1],["Rictor",1],["Shatterstar",1],["Critical Hit",3],["Moment of Triumph",3],["Keep Them Busy",1],["\"Now I'm Mad\"",3],["The Direct Approach",3]],
  basics:[["Specialized Training",1],["IPAC",1],["X-Bunker",1],["Endurance",3],["Combat Specialist",1],["Defense Specialist",1],["Front Line Specialist",1],["Surveillance Specialist",1]],
  bonus:[["Predictable Ploy","Justice",3],["Rally the Troops","Leadership",1],["Anticipated Attack","Protection",3]]},
-"deadpool":{aspect:"Aggression",confidence:"exact",note:"Deadpool's 'Pool' cards are exclusive to him (not shared with any aspect pool), per official deckbuilding rules — all 33 Pool cards are listed directly in his hero card list alongside his 11 signature cards, using their real printed quantities.",
- hero:[["Cable",1],["Exhausting Personality",1],["Maximum Effort",2],["Metaknowledge",1],["\"Yoo-Hoo!\"",2],["Montage",1],["Chimichanga Truck",1],["Armed to the Teeth",1],["Deadpool's Katana",2],["It Ain't Over...",1],["This Card is Fire",2],["Dogpool",1],["Headpool",1],["Kidpool",1],["Lady Deadpool",1],["Barely a Scratch",3],["Cutupper",1],["Da Bomb",1],["Get Rage-y",1],["\"I Got This\"",3],["Not my Responsibility",1],["'Pool Inspection",1],["Live Dangerously",1],["Self Confidence",1],["Self Control",1],["Self Preservation",1],["Git Gud",1],["Healing Factor",3],["Stick-To-Itiveness",1],["Bob, Agent of Hydra",1],["Negasonic Teenage Warhead",1],["Pandapool",1],["Break Time",1],["Get in Front of Me!",1],["Mulligan",3],["Deadpool Corps Ship",1],["Plot Convenience",1],["Ambush",3],["Bazooka",2],["Blackout",1],["Distraction",3],["Laser Swords",1],["Rock, Paper, Scissors",1],["Tic-Tac-Toe",1],["War",1]],
- aspectCards:[],
+"deadpool":{aspect:"Pool",confidence:"exact",note:"Deadpool's home aspect is 'Pool' (the pink card class), not one of the classic four aspects — his hero: list is his 11 true signature cards; the 34 Pool-class cards he introduces are shared via aspectCards into the Pool aspect pool, same as any other aspect.",
+ hero:[["Cable",1],["Exhausting Personality",1],["Maximum Effort",2],["Metaknowledge",1],["\"Yoo-Hoo!\"",2],["Montage",1],["Chimichanga Truck",1],["Armed to the Teeth",1],["Deadpool's Katana",2],["It Ain't Over...",1],["This Card is Fire",2]],
+ aspectCards:[["Dogpool",1],["Headpool",1],["Kidpool",1],["Lady Deadpool",1],["Barely a Scratch",3],["Cutupper",1],["Da Bomb",1],["Get Rage-y",1],["\"I Got This\"",3],["Not my Responsibility",1],["'Pool Inspection",1],["Live Dangerously",1],["Self Confidence",1],["Self Control",1],["Self Preservation",1],["Git Gud",1],["Healing Factor",3],["Stick-To-Itiveness",1],["Bob, Agent of Hydra",1],["Negasonic Teenage Warhead",1],["Pandapool",1],["Break Time",1],["Get in Front of Me!",1],["Mulligan",3],["Deadpool Corps Ship",1],["Plot Convenience",1],["Ambush",3],["Bazooka",2],["Blackout",1],["Distraction",3],["Laser Swords",1],["Rock, Paper, Scissors",1],["Tic-Tac-Toe",1],["War",1]],
  basics:[["Frenemies",1]],
  bonus:[]},
 "bishop":{aspect:"Leadership",confidence:"exact",
@@ -872,7 +905,7 @@ const DECKS = {
  basics:[["Shadowcat",1],["Beak",1],["Team-Building Exercise",3],["Recuperation",3],["The Power in All of Us",2]],
  bonus:[]},
 "jubilee":{aspect:"Justice",confidence:"exact",
- hero:[["Wolverine",1],["Shopping Spree",1],["Jubilee's Coat",1],["Jubilee's Sunglasses",1],["Blinding Flash",1],["Firecracker",1],["Flash of Light",1],["Grande Finale",1],["Plasmoid Energy",1]],
+ hero:[["Wolverine",1],["Shopping Spree",1],["Jubilee's Coat",1],["Jubilee's Sunglasses",1],["Blinding Flash",1],["Firecracker",3],["Flash of Light",3],["Grande Finale",1],["Plasmoid Energy",3]],
  aspectCards:[["Chamber",1],["Husk",1],["Disguise",3],["Waylay",3],["Three Steps Ahead",3],["Generation X",1],["The Power of Justice",2]],
  basics:[["Synch",1],["Cell Phone",3],["X-Gene",3],["Multitalented",3],["Unlikely Duo",2]],
  bonus:[["Mutant Mayhem","Leadership",3],["Serve and Protect","Protection",3]]},
@@ -922,18 +955,23 @@ const DECKS = {
  basics:[["Swordsman",1],["Jarvis",1],["Avengers Compound",1]],
  bonus:[["Bombs Away","Aggression",3],["Stronger Together","Protection",3],["Unified Strike","Leadership",3],["Caught in the Crossfire","Aggression",3],["Cameo","Leadership",1],["Coordinated Effort","Leadership",3],["Disarming Defense","Protection",3]]},
 "hercules":{aspect:"Leadership",confidence:"exact",
- hero:[["Defeat the Hydra",1],["Embody Pathos",1],["Protect Humanity",1],["Nemean Lion Skin",1],["Shield of Perseus",1],["Sword of Peleus",1],["Amadeus Cho",1],["The Gift of Battle",3],["Son of Zeus",2],["Wisdom of Athena",2],["Olympus",1],["Gauntlets of Hercules",1],["Golden Mace",1],["Herc's Helm",1],["Lion of Olympus",2],["Prince of Power",1]],
+ hero:[["Amadeus Cho",1],["The Gift of Battle",3],["Son of Zeus",2],["Wisdom of Athena",2],["Olympus",1],["Gauntlets of Hercules",1],["Golden Mace",1],["Herc's Helm",1],["Lion of Olympus",2],["Prince of Power",1]],
+ extras:[
+   {label:"Labor Deck subset (optional, 1 copy each)",cards:[["Defeat the Hydra",1],["Embody Pathos",1],["Protect Humanity",1]]},
+   {label:"Gift Deck subset (optional, 1 copy each)",cards:[["Nemean Lion Skin",1],["Shield of Perseus",1],["Sword of Peleus",1]]}
+ ],
  aspectCards:[["Deathcry",1],["Namora",1],["Thor",1],["Teamwork",3],["Call for Backup",1],["Recruitment Drive",3],["\"Avenge Me!\"",3]],
  basics:[["Gilgamesh",1],["Ancient Rivalry",2],["Limitless Stamina",3],["Evaluate Threat",1],["Avengers Compound",1],["Helicarrier",1],["Quincarrier",1]],
  bonus:[]},
 "daredevil":{aspect:"Justice",confidence:"exact",
- hero:[["Acute Tactility",1],["Enhanced Olfaction",1],["Heightened Hearing",1],["Radar Sense",1],["Superior Taste",1],["Elektra",1],["Cross-Examination",2],["Deposition",2],["Living Lie Detector",2],["Raising Hell",1],["Focus the Senses",1],["Foggy Nelson",1],["Karen Page",1],["Nelson and Murdock",1],["Sister Maggie",1],["Daredevil's Billy Club",1],["The Man Without Fear",1]],
+ hero:[["Elektra",1],["Cross-Examination",2],["Deposition",2],["Living Lie Detector",2],["Raising Hell",1],["Focus the Senses",1],["Foggy Nelson",1],["Karen Page",1],["Nelson and Murdock",1],["Sister Maggie",1],["Daredevil's Billy Club",1],["The Man Without Fear",1]],
+ extra:{label:"Sense Deck subset (optional, 1 copy each)",cards:[["Acute Tactility",1],["Enhanced Olfaction",1],["Heightened Hearing",1],["Radar Sense",1],["Superior Taste",1]]},
  aspectCards:[["Blindspot",1],["Cloak",1],["Dagger",1],["Ghost Rider",1],["Know Your Enemy",3],["De-escalation",1],["Chance Encounter",3],["Legal Trouble",3],["Move in Shadow",3],["Stealth Training",3]],
  basics:[["Stick",1],["Contingency Planning",3],["Dance with the Devil",2]],
  bonus:[]},
 "echo":{aspect:"Protection",confidence:"exact",
- hero:[["Innate Reflexes",1],["Daredevil",1],["Photographic Reflexes",2],["Study the Tape",2],["The Rez",1],["American Sign Language",1],["Choreography",1],["Echo's Katana",1],["Improvisation",1],["Muscle Memory",1]],
- aspectCards:[["Army of One",3],["Get Their Attention",3],["In Harm's Way",3],["Powerful Punch",3],["The Best Offense...",3],["Ronin",1],["Stand Alone",3]],
+ hero:[["Daredevil",1],["Photographic Reflexes",6],["Study the Tape",2],["The Rez",1],["American Sign Language",1],["Choreography",1],["Echo's Katana",1],["Improvisation",1],["Muscle Memory",1]],
+ aspectCards:[["Innate Reflexes",1],["Army of One",3],["Get Their Attention",3],["In Harm's Way",3],["Powerful Punch",3],["The Best Offense...",3],["Ronin",1],["Stand Alone",3]],
  basics:[["See No Evil, Hear No Evil",2],["Superpower Training",1]],
  bonus:[]}
 };
@@ -955,8 +993,126 @@ const DECKS = {
    we've catalogued so far, not a real MarvelCDB release-date import; a card's
    true first-print phase could theoretically be earlier than the earliest
    pack we've sourced it from. */
-const ASPECT_POOL = { Aggression:[], Justice:[], Leadership:[], Protection:[] };
-const BASIC_POOL = [];
+const ASPECT_POOL = { Aggression:[], Justice:[], Leadership:[], Protection:[], Basic:[], Pool:[], Campaign:[] };
+// A deck/preset's declared "home aspect" is one of these five — the real
+// deckbuilding-defining choice a hero commits to. Basic and Campaign are not
+// home aspects (no hero is "Basic-aspect"); they're auxiliary pools every
+// deck can additionally draw from, browsed on demand via the tab row instead
+// of a permanently-visible section.
+const HOME_ASPECTS = ["Aggression","Justice","Leadership","Protection","Pool"];
+// BASIC_POOL is kept as a plain reference to ASPECT_POOL.Basic (same array
+// object) so existing code that reads BASIC_POOL directly keeps working while
+// Basic also behaves like any other selectable aspect in the deckbuilder.
+const BASIC_POOL = ASPECT_POOL.Basic;
+// CARD_META: { cardName: [type_code, cost, resourceLetter] } sourced directly from
+// MarvelCDB's public API per-pack card data (real name/type_code/cost/resource_*
+// fields), covering every card this app currently knows the name of that a
+// cached pack fetch reached. Used purely for display (grouping the deckbuilder
+// by card type and showing cost/resource, matching MarvelCDB's own deckbuilder
+// layout) - never for legality/qty math, which stays driven by ASPECT_POOL's
+// verified deck_limit data regardless of whether a card has META coverage.
+// Cards not present here (rarer hero-pack allies MarvelCDB packs we haven't
+// pulled full data for yet) simply render without a cost/resource badge and
+// fall into an "Other" group at the end of that pool's list - never blocks
+// the app.
+const CARD_META = {"\"Avenge Me!\"":["upgrade",0,"P"],"\"Bring It!\"":["event",0,"E"],"\"Come Get Me, Bub!\"":["event",0,"M"],"\"Fight Me, Coward!\"":["event",0,"P"],"\"Go for Champions!\"":["event",3,"W"],"\"I Don't Think So!\"":["event",1,"E"],"\"I Got Better\"":["upgrade",4,"E"],"\"I Got This\"":["event",1,"E"],"\"I am Groot\"":["event",3,"M"],"\"I. AM. GROOT!\"":["event",2,"P"],"\"Now I'm Mad\"":["upgrade",1,"P"],"\"Stop Hitting Yourself\"":["event",2,"P"],"\"Think Fast!\"":["event",1,"E"],"\"To Me, My X-Men!\"":["event",1,"E"],"\"We Are Groot\"":["event",1,"M"],"\"Welcome Aboard\"":["event",0,"E"],"\"What Are You?\"":["upgrade",2,"E"],"\"Yoo-Hoo!\"":["event",1,"E"],"\"You Got This!\"":["event",1,"E"],"\"You'll Pay for That!\"":["event",1,"E"],"'Pool Inspection":["event",6,"M"],"'Port Away":["event",0,"E"],"'Port and Punch":["event",2,"E"],"616 Hickory Branch Lane":["support",1,"M"],"A Good Workout":["event",2,"W"],"Aamir Khan":["support",1,"M"],"Absorbing Man: Carl Creel":["ally",3,"W"],"Accelerated Reflex":["upgrade",2,"E"],"Acrobatic Move":["event",0,"E"],"Across the Spider-Verse":["event",2,"W"],"Active Altruism":["event",0,"E"],"Acute Control":["upgrade",1,"M"],"Acute Tactility":["upgrade",1,"P"],"Adam Warlock":["ally",3,"P"],"Adamantium Lacing":["upgrade",1,"P"],"Adamantium Skeleton":["upgrade",2,"P"],"Adaptive Plumage":["event",3,"M"],"Adrenaline Rush":["upgrade",1,"E"],"Advanced Suit":["upgrade",0,"M"],"Aerial Agility":["event",1,"P"],"Aerial Evacuation":["upgrade",1,"P"],"Aerial Intervention":["event",0,"E"],"Aerial Recon":["upgrade",1,"M"],"Aero":["ally",3,"E"],"Agatha Harkness":["support",1,"M"],"Agent 13":["ally",4,"P"],"Agent Coulson":["ally",3,"M"],"Agents of S.H.I.E.L.D.":["support",3,"M"],"Aggressive Energy":["resource",null,"W"],"Aggressive Stance":["upgrade",1,"M"],"Agile Flight":["event",3,"M"],"Air Supremacy":["event",2,"P"],"Airwalk":["event",1,"M"],"Aja-Adanna":["upgrade",1,"M"],"Albert Moon":["support",2,"M"],"All Systems Go!":["event",1,"E"],"All for One":["event",2,"E"],"All-Points Bulletin":["event",2,"E"],"Alpha Flight Recruit":["upgrade",0,"W"],"Alpha Flight Station":["support",1,"M"],"Always Be Running":["event",1,"E"],"Amadeus Cho":["ally",2,"W"],"Ambush":["upgrade",1,"M"],"American Sign Language":["upgrade",2,"M"],"Ancestral Knowledge":["event",1,"M"],"Ancient Rivalry":["event",1,"W"],"Android Assistance":["resource",null,"W"],"Aneka":["ally",3,"M"],"Angel":["ally",3,"M"],"Angel's Aerie":["support",1,"M"],"Angela":["ally",0,"M"],"Animal Instinct":["event",0,"M"],"Annabelle Riggs":["ally",2,"W"],"Anole":["ally",2,"E"],"Ant-Man":["ally",0,"M"],"Ant-Man's Helmet":["upgrade",3,"M"],"Anticipated Attack":["event",2,"M"],"Anticipation":["upgrade",1,"P"],"Arachnobatics":["event",1,"M"],"Aragorn":["upgrade",2,"M"],"Arc Reactor":["upgrade",2,"E"],"Arctic Attack":["event",2,"E"],"Arm Block":["event",1,"M"],"Armed to the Teeth":["upgrade",2,"E"],"Armor":["ally",2,"P"],"Armor Up":["event",0,"P"],"Armored Vest":["upgrade",1,"M"],"Army of Ants":["support",1,"P"],"Army of One":["event",1,"E"],"As One!":["event",2,"P"],"Asgard":["support",3,"M"],"Askani'son":["upgrade",1,"W"],"Assault":["upgrade",null,"P"],"Assault Training":["support",1,"M"],"Assess the Situation":["event",0,"M"],"Asteroid M":["support",2,"W"],"Astonishing X-Men":["player_side_scheme",1,"P"],"Astral Projection":["event",2,"M"],"Athletic Conditioning":["event",1,"M"],"Atlas Bear":["ally",3,"M"],"Atlas Bear: Shoon'kwa":["ally",3,"M"],"Attack Training":["upgrade",1,"P"],"Attacrobatics":["upgrade",1,"P"],"Audacity":["resource",null,"W"],"Aunt May":["support",1,"E"],"Aunt May & Uncle Ben":["support",1,"M"],"Avengers Assemble!":["event",4,"E"],"Avengers Compound":["support",0,"M"],"Avengers Mansion":["support",4,"M"],"Avengers Tower":["support",2,"M"],"Avian Anatomy":["resource",null,"W"],"Ayo":["ally",3,"P"],"Backflip":["event",0,"P"],"Bad Boy":["support",3,"P"],"Bait and Switch":["event",1,"E"],"Bambino":["upgrade",3,"E"],"Bamf!":["upgrade",0,"P"],"Band Together":["resource",null,null],"Banner's Laboratory":["support",2,"M"],"Banshee":["ally",4,"E"],"Barely a Scratch":["event",0,"M"],"Basic Spell":["event",2,"E"],"Battery Pack":["upgrade",1,"E"],"Battle Fury":["upgrade",1,"E"],"Battlefield Awareness":["upgrade",2,"M"],"Battlefield Benevolence":["event",1,"P"],"Bazooka":["upgrade",2,"E"],"Beak":["ally",2,"E"],"Beast":["ally",4,"M"],"Beat 'Em Up":["event",2,"E"],"Beat Cop":["support",3,"P"],"Beauty and the Thief":["event",2,"E"],"Befuddle":["upgrade",0,"P"],"Behind Enemy Lines":["event",2,"M"],"Berserker Barrage":["event",2,"P"],"Berserker Frenzy":["upgrade",2,"M"],"Beta Ray Bill":["ally",5,"P"],"Big Hands":["event",2,"P"],"Bio-Synthetic Wings":["upgrade",2,"E"],"Biokinetic Polymer Suit":["upgrade",1,"M"],"Bird of Prey":["event",2,"P"],"Bird's-Eye View":["event",2,"M"],"Bishop":["ally",3,"E"],"Bishop's Rifle":["upgrade",2,"E"],"Bishop's Uniform":["upgrade",2,"M"],"Black Cat":["ally",2,"E"],"Black Knight":["ally",3,"P"],"Black Panther":["ally",4,"M"],"Black Widow":["ally",3,"W"],"Black Widow's Gauntlet":["upgrade",1,"P"],"Black Widow: Natasha Romanoff":["ally",3,"P"],"Blackout":["upgrade",0,"E"],"Blade":["ally",1,"P"],"Blade: Eric Brooks":["ally",1,"P"],"Blast of Wind":["event",3,"P"],"Blaze of Glory":["event",2,"P"],"Blindfold":["ally",3,"P"],"Blinding Flash":["event",3,"W"],"Blindspot":["ally",4,"E"],"Bling!":["ally",2,"E"],"Blizzard":["support",null,"M"],"Blood Rage":["upgrade",1,"E"],"Bloodgem":["upgrade",0,"W"],"Blue Marvel":["ally",3,"W"],"Bob, Agent of Hydra":["ally",2,"P"],"Bodyslide":["event",0,"E"],"Bombs Away":["event",2,"E"],"Bombshell":["ally",4,"E"],"Boom Boom":["ally",3,"E"],"Booster Boots":["upgrade",1,"M"],"Boot Camp":["support",3,"M"],"Boundless Rage":["upgrade",1,"P"],"Brains Over Brawn":["event",2,"P"],"Brawn":["ally",4,"P"],"Break Time":["event",3,"E"],"Breaking and Entering":["event",2,"E"],"Brother Voodoo":["ally",3,"M"],"Browbeat":["event",2,"P"],"Bruno Carrelli":["support",1,"P"],"Brute Force":["upgrade",1,"M"],"Bug":["ally",2,"E"],"Build Support":["player_side_scheme",1,"M"],"Bulletproof Belle":["event",1,"P"],"Bulletproof Protector":["event",0,"P"],"C.I.T.T.":["support",2,"W"],"Cable":["ally",3,"W"],"Cable Arrow":["event",1,"P"],"Calculated Risk":["event",2,"W"],"Caliban":["ally",3,"M"],"Call for Aid":["event",0,"P"],"Call for Backup":["player_side_scheme",1,"M"],"Cameo":["support",null,null],"Cannonball":["ally",3,"P"],"Captain America":["ally",6,"P"],"Captain America's Helmet":["upgrade",1,"P"],"Captain America's Shield":["upgrade",1,"W"],"Captain Americat":["ally",3,"W"],"Captain Britain":["ally",4,"M"],"Captain Marvel":["ally",4,"W"],"Captain Marvel's Helmet":["upgrade",2,"P"],"Cartoon Physics":["upgrade",1,"P"],"Caught in the Crossfire":["upgrade",0,"E"],"Cell Phone":["upgrade",2,"E"],"Cerebro":["support",1,"M"],"Chamber":["ally",4,"E"],"Champions Mobile Bunker":["support",2,"P"],"Chance Encounter":["upgrade",0,"E"],"Change of Fortune":["upgrade",1,"M"],"Chaos Magic":["event",0,"W"],"Charged Card":["event",2,"P"],"Charlie-27":["ally",4,"P"],"Chase Them Down":["event",0,"M"],"Children of the Atom":["support",1,"E"],"Chill Out!":["event",2,"M"],"Chimichanga Truck":["support",2,"M"],"Chooser of the Slain":["event",0,"M"],"Choreography":["upgrade",1,"M"],"Civic Duty":["upgrade",1,"M"],"Clarity of Purpose":["upgrade",1,"M"],"Claw Mastery":["event",1,"E"],"Clawed Strike":["event",2,"P"],"Clea":["ally",2,"P"],"Clear Skies":["support",null,"W"],"Clear the Area":["event",1,"M"],"Cloak":["ally",3,"M"],"Cloak of Levitation":["upgrade",2,"P"],"Clobber":["event",2,"P"],"Cloud 9":["ally",3,"M"],"Colossus":["ally",3,"W"],"Combat Ready":["event",0,"P"],"Combat Specialist":["upgrade",2,"W"],"Combat Training":["upgrade",2,"P"],"Combine Forces":["event",1,"E"],"Command Authority":["event",2,"M"],"Command Center":["support",1,"M"],"Command Team":["support",2,"E"],"Comms Implant":["upgrade",1,"M"],"Concentrated Fire":["event",2,"E"],"Concussive Blast":["event",3,"P"],"Concussive Blow":["event",3,"P"],"Conditioning Room":["support",1,"M"],"Connection to the Worldmind":["resource",null,"W"],"Containment Strategy":["upgrade",1,"M"],"Contaminant Immunity":["event",2,"E"],"Contingency Planning":["upgrade",0,"P"],"Coordinated Attack":["upgrade",0,"P"],"Coordinated Effort":["upgrade",0,"W"],"Cosmic Alliance":["event",3,"E"],"Cosmic Awareness":["event",2,"M"],"Cosmic Flight":["upgrade",2,"E"],"Cosmic Ward":["upgrade",1,"E"],"Cosmo":["ally",2,"M"],"Counter-Punch":["event",0,"P"],"Counterattack":["upgrade",1,"P"],"Counterintelligence":["upgrade",2,"E"],"Covert Ops":["event",3,"M"],"Covert Surveillance":["event",1,"M"],"Creole Charmer":["event",2,"E"],"Crew Quarters":["support",1,"M"],"Crimson Bands of Cyttorak":["event",2,null],"Crisis Averted":["event",3,"M"],"Crisis Interdiction":["event",2,"E"],"Critical Hit":["event",2,"M"],"Cross-Examination":["event",1,"P"],"Crosscounter":["event",1,"P"],"Crushing Blow":["event",1,"P"],"Cryokinetic Perception":["upgrade",2,"M"],"Cutthroat Ambition":["upgrade",1,"M"],"Cutupper":["event",3,"P"],"Cybernetic Arm":["upgrade",1,"P"],"Cybernetic Skeleton":["upgrade",2,"E"],"Cyclops":["ally",3,"P"],"Cypher":["ally",2,"E"],"DWI Theet Mastery":["upgrade",1,"M"],"Da Bomb":["event",6,"P"],"Dagger":["ally",3,"E"],"Dance of Death":["event",3,"E"],"Dance with the Devil":["upgrade",0,"W"],"Danger Room":["support",2,"E"],"Danger Room Training":["upgrade",1,"M"],"Daredevil":["ally",2,"P"],"Daredevil's Billy Club":["upgrade",1,"P"],"Daredevil: Matt Murdock":["ally",4,"P"],"Daring Escape":["event",0,"E"],"Daughters of Thanos":["event",1,"W"],"Dauntless":["upgrade",1,"E"],"Daytripper":["ally",2,"W"],"Dazzler":["ally",4,"E"],"De-escalation":["player_side_scheme",0,"P"],"Deadpool":["ally",3,"W"],"Deadpool Corps Ship":["support",1,"M"],"Deadpool's Katana":["upgrade",2,"P"],"Deadpool: Wade Wilson":["ally",3,"W"],"Death-Glow":["upgrade",1,null],"Deathcry":["ally",3,"P"],"Deathlok":["ally",3,"P"],"Deathlok: Unit L17":["ally",4,"P"],"Decisive Blow":["event",2,"P"],"Defender of the Nine Realms":["event",0,"P"],"Defense Mechanism":["upgrade",1,"M"],"Defense Specialist":["upgrade",2,"W"],"Defensive Energy":["resource",null,"W"],"Defensive Stance":["upgrade",2,"E"],"Defensive Training":["support",1,"M"],"Defiance":["event",0,"E"],"Deflection":["event",2,"M"],"Deft Focus":["upgrade",1,"E"],"Density Control":["upgrade",1,"M"],"Deposition":["event",1,"M"],"Desperate Defense":["event",1,"E"],"Determination":["resource",null,"W"],"Diamondback":["ally",2,"W"],"Digging Deep":["resource",null,"W"],"Directed Force":["event",0,"P"],"Disarming Defense":["event",1,"E"],"Disguise":["upgrade",1,"M"],"Distraction":["upgrade",0,"P"],"Dive Bomb":["event",4,"P"],"Dogpool":["ally",3,"P"],"Domino":["ally",3,"W"],"Domino's Pistol":["upgrade",2,"W"],"Dora Milaje":["support",3,"W"],"Double Agent":["event",2,"W"],"Double Life":["event",1,"E"],"Double Time":["event",2,"M"],"Down Time":["upgrade",1,"P"],"Dr. Sinclair":["support",2,"M"],"Dragonfang":["upgrade",1,"P"],"Draw Their Fire":["upgrade",1,"E"],"Drax":["ally",3,"P"],"Drax's Knife":["upgrade",1,"W"],"Drax's Other Knife":["upgrade",1,"W"],"Drop Kick":["event",3,"P"],"Dum Dum Dugan":["ally",5,"P"],"Dust":["ally",3,"E"],"E.V.A.":["support",0,"W"],"EM Shield":["upgrade",2,"E"],"Earth's Mightiest Heroes":["event",0,"E"],"Echo's Katana":["upgrade",2,"P"],"Effective Leadership":["resource",null,"W"],"Eidetic Memory":["upgrade",1,"E"],"Ejection Protocol":["support",0,"P"],"Electric Arrow":["event",2,"E"],"Electrical Discharge":["event",2,"E"],"Electromagnetic Blast":["event",2,"E"],"Electrostatic Armor":["upgrade",1,"E"],"Elektra":["ally",3,"W"],"Element Gun":["upgrade",3,"E"],"Elixir":["ally",4,"M"],"Embiggen!":["upgrade",2,"E"],"Emergency":["event",0,"E"],"Endurance":["upgrade",1,"E"],"Energy":["resource",null,"E"],"Energy Absorption":["resource",null,"E"],"Energy Barrier":["upgrade",2,"E"],"Energy Channel":["upgrade",0,"M"],"Energy Conversion":["event",0,"E"],"Energy Daggers":["upgrade",2,"M"],"Energy Duplication":["upgrade",2,"W"],"Energy Shield":["upgrade",0,"E"],"Energy Siphon":["resource",null,"E"],"Energy Spear":["upgrade",1,"E"],"Energy Transfer":["event",2,"E"],"Enhanced Awareness":["upgrade",2,"M"],"Enhanced Olfaction":["upgrade",1,"E"],"Enhanced Physique":["upgrade",2,"P"],"Enhanced Reflexes":["upgrade",2,"E"],"Enhanced Spider-Sense":["event",1,"M"],"Enraged":["upgrade",1,"P"],"Entangling Vines":["upgrade",1,"M"],"Eros":["ally",2,"M"],"Espionage":["upgrade",1,"P"],"Establish Perimeter":["player_side_scheme",1,"E"],"Eternity":["event",2,"E"],"Evaluate Threat":["player_side_scheme",1,"M"],"Evasive Maneuvering":["upgrade",1,"E"],"Even the Odds":["event",2,"E"],"Ever Vigilant":["event",2,"M"],"Everyday Hero":["resource",null,"W"],"Everywhere All at Once":["event",-1,"E"],"Exhausting Personality":["event",0,"M"],"Exorcism":["event",2,"E"],"Expert Defense":["event",0,"M"],"Expert Marksman":["upgrade",1,"W"],"Exploit Weakness":["upgrade",1,"P"],"Explosive Arrow":["event",1,"P"],"Eyepatch Camera":["upgrade",2,"P"],"Eyes in the Sky":["upgrade",0,"E"],"Face the Past":["event",0,"P"],"Falcon":["ally",4,"E"],"Falcon's Flock":["support",2,"E"],"Fantomex":["ally",4,"E"],"Fastball Special":["event",1,"E"],"Fearless Determination":["event",0,"M"],"Feral":["ally",4,"E"],"Fertile Ground":["support",1,"E"],"Field Agent":["support",1,"E"],"Field Commander":["upgrade",1,"P"],"Fighting Dirty":["event",2,"W"],"Fighting Fit":["event",2,"P"],"Finesse":["upgrade",2,"M"],"Firebird":["ally",2,"E"],"Firecracker":["event",2,"P"],"Firepower":["event",1,"P"],"First Aid":["event",1,"M"],"First Hit":["event",1,"E"],"Flash Freeze":["event",1,"E"],"Flash of Light":["event",2,"P"],"Flight Squadron":["support",2,"P"],"Flight of the Valkyrior":["upgrade",2,"E"],"Float Like a Butterfly":["upgrade",2,"E"],"Flora and Fauna":["event",1,"W"],"Flow Like Water":["upgrade",2,"P"],"Fluid Motion":["upgrade",1,"E"],"Flurry of Blades":["event",3,"E"],"Fly Over":["event",2,"M"],"Flying Formation":["event",4,"M"],"Focus the Senses":["player_side_scheme",0,"M"],"Focused Rage":["upgrade",3,"E"],"Foggy Nelson":["support",2,"M"],"Foiled!":["event",0,"E"],"Follow Through":["upgrade",2,"M"],"Followed":["upgrade",1,"E"],"For Asgard!":["event",1,"P"],"For Justice!":["event",2,"E"],"Forced Amnesia":["upgrade",1,"M"],"Forcefield Generator":["upgrade",3,"E"],"Forcefield Projection":["event",1,"P"],"Forge":["ally",2,"M"],"Forward Momentum":["event",2,"M"],"Frenemies":["event",1,"W"],"Friction Resistance":["upgrade",3,"P"],"Front Line Specialist":["upgrade",2,"W"],"Front Organization":["support",0,"M"],"Frostbite":["upgrade",null,null],"Frozen Solid":["upgrade",3,"M"],"Fruition":["event",0,"M"],"Full Auto":["event",2,"P"],"Full Blast":["event",1,"P"],"Full-Body Charge":["event",4,"P"],"Fury's Flying Car":["support",2,"E"],"Fury's Watch":["upgrade",1,"P"],"Fusillade":["event",2,"M"],"Gambit":["ally",3,"E"],"Gambit's Guild Armor":["upgrade",1,"M"],"Gambit's Staff":["upgrade",1,"M"],"Game Time":["event",0,"E"],"Gamma":["upgrade",null,"P"],"Gamma Blast":["event",3,"P"],"Gamma Slam":["event",4,"M"],"Gamora":["ally",3,"E"],"Gamora's Sword":["upgrade",3,"P"],"Ganke Lee":["support",2,"W"],"Gatekeeper":["upgrade",0,"M"],"Gauntlet Gun":["upgrade",2,"P"],"Gauntlets of Hercules":["upgrade",0,"P"],"Generation X":["player_side_scheme",0,"E"],"Genius":["resource",null,"M"],"Gentle":["ally",3,"P"],"George Stacy":["support",1,"E"],"Get Behind Me!":["event",1,"M"],"Get Over Here!":["event",0,"E"],"Get Rage-y":["event",0,"P"],"Get Ready":["event",0,"P"],"Get Their Attention":["event",2,"M"],"Get in Front of Me!":["event",1,"M"],"Get the Scoop":["player_side_scheme",0,"W"],"Ghost Kick":["event",2,"P"],"Ghost Rider":["ally",3,"E"],"Ghost-Spider":["ally",3,"W"],"Ghost-Spider: Gwen Stacy":["ally",3,"W"],"Giant Help":["event",2,"M"],"Giant Stomp":["event",3,"E"],"Giant Strength":["upgrade",1,"E"],"Giant-Man":["ally",5,"P"],"Gilgamesh":["ally",3,"P"],"Git Gud":["upgrade",2,"M"],"Glob":["ally",3,"E"],"Global Logistics":["event",0,"P"],"Go All Out":["event",2,"M"],"Go Down Swinging":["event",0,"P"],"God of Thunder":["upgrade",2,"E"],"Godlike Stamina":["event",0,"P"],"Godslayer":["upgrade",3,"M"],"Goin' Rogue":["event",2,"M"],"Going Undercover":["player_side_scheme",0,"P"],"Goldballs":["ally",3,"P"],"Golden Mace":["upgrade",1,"P"],"Goliath":["ally",4,"M"],"Government Liaison":["support",2,"M"],"Grande Finale":["event",3,"W"],"Grant Ward":["ally",0,"P"],"Grappling Hook":["upgrade",2,"M"],"Grasping Tendrils":["event",2,"P"],"Graymalkin":["support",2,"E"],"Great Responsibility":["event",0,"M"],"Grim Resolve":["upgrade",1,"M"],"Groot":["ally",3,"W"],"Ground Stomp":["event",2,"M"],"Guardians of the Galaxy":["support",2,"M"],"Gunboat Diplomacy":["event",1,"E"],"Gutsy Move":["event",2,"M"],"Hall of Heroes":["support",2,"M"],"Ham It Up":["event",0,"M"],"Hammer Throw":["event",3,"E"],"Hand Cannon":["upgrade",2,"P"],"Hangar Bay":["support",1,"M"],"Hard Knocks":["event",3,"P"],"Hard to Hit":["upgrade",1,"W"],"Hard to Ignore":["upgrade",1,"P"],"Have at Thee!":["event",3,"E"],"Havok":["ally",4,"E"],"Hawkeye":["ally",2,"P"],"Hawkeye's Bow":["upgrade",0,"W"],"Hawkeye's Quiver":["upgrade",1,"M"],"Haymaker":["event",2,"E"],"Headpool":["ally",3,"P"],"Healing Factor":["upgrade",3,"E"],"Heart of the Panther":["event",2,"W"],"Height Advantage":["upgrade",1,"M"],"Heightened Hearing":["upgrade",1,"M"],"Heimdall":["ally",5,"M"],"Helicarrier":["support",3,"P"],"Hellcat":["ally",3,"W"],"Herc's Helm":["upgrade",0,"P"],"Hercules":["ally",6,"P"],"Heroic Conditioning":["upgrade",3,"P"],"Heroic Intuition":["upgrade",2,"E"],"Heroic Strike":["event",3,"P"],"Hex Bolt":["event",2,"M"],"High-Tech Suit":["upgrade",1,"W"],"Hit and Run":["event",3,"E"],"Hive Mind":["event",2,"P"],"Hogwashed":["event",1,"E"],"Homeland Intervention":["event",0,"E"],"Honed Technique":["upgrade",3,"M"],"Honey Badger":["ally",2,"W"],"Honorary Avenger":["upgrade",0,"P"],"Honorary Guardian":["upgrade",0,"E"],"Honorary X-Men":["upgrade",0,"P"],"Hope Summers":["ally",4,"M"],"Host Spider":["upgrade",3,"W"],"Huge Wooden Hammer":["upgrade",2,"P"],"Hugin & Munin":["ally",2,"E"],"Hulk":["ally",2,"E"],"Hulk Smash":["event",3,"P"],"Hulk: Bruce Banner":["ally",2,"E"],"Hurricane":["support",null,"P"],"Husk":["ally",4,"P"],"Hyper Perception":["upgrade",2,"M"],"I've Got a Plan":["event",1,"M"],"IPAC":["support",1,"M"],"Ice Blast":["event",3,"P"],"Ice Slide":["upgrade",2,"E"],"Ice Wall":["support",4,"P"],"Iceman":["ally",3,"M"],"Images of Ikonn":["event",1,null],"Immovable Object":["upgrade",3,"P"],"Impede":["event",2,"M"],"Improvisation":["upgrade",3,"E"],"In Harm's Way":["event",3,"P"],"In-Betweener":["event",2,"M"],"Inconspicuous":["event",1,"E"],"Indomitable":["upgrade",1,"E"],"Indra":["ally",2,"E"],"Infiltration":["event",1,"M"],"Informant":["upgrade",1,"P"],"Ingenuity":["upgrade",2,"M"],"Innate Reflexes":["upgrade",1,null],"Innovation":["resource",null,"W"],"Inspired":["upgrade",1,"P"],"Inspiring Presence":["event",1,"M"],"Intangible":["upgrade",0,null],"Intangible Interference":["upgrade",1,"M"],"Intelligence":["upgrade",1,"M"],"Intelligence Analysis":["upgrade",0,"M"],"Interrogation Room":["support",1,"E"],"Intimidation":["event",1,"M"],"Into the Fray":["event",3,"E"],"Investigative Journalism":["event",2,"W"],"Invisibility Gear":["upgrade",1,"E"],"Invulnerability":["event",3,"P"],"Ionic Blast":["event",1,"E"],"Ionic Physiology":["upgrade",null,"E"],"Iron Fist":["ally",4,"P"],"Iron Lad: Nathaniel Richards":["ally",2,"E"],"Iron Man":["ally",4,"W"],"Iron Will":["upgrade",2,"M"],"Ironheart":["ally",2,"M"],"It Ain't Over...":["upgrade",1,"E"],"J. Jonah Jameson":["support",3,"M"],"Jack Flag":["ally",4,"E"],"Jackpot!":["resource",null,"P"],"Jarnbjorn":["upgrade",1,"P"],"Jarvis":["support",2,"E"],"Jefferson Davis":["support",2,"P"],"Jemma Simmons":["support",3,"M"],"Jesse Alexander":["support",2,"M"],"Jessica Drew's Apartment":["support",1,"P"],"Jessica Jones":["ally",3,"E"],"Jet Belt":["upgrade",2,"M"],"Jet Boots":["upgrade",2,"M"],"Jocasta":["ally",3,"M"],"Joining Forces":["event",4,"E"],"Jubilee":["ally",2,"W"],"Jubilee's Coat":["upgrade",2,"W"],"Jubilee's Sunglasses":["upgrade",2,"W"],"Judoka Skill":["upgrade",2,"P"],"Jump Flip":["event",1,"P"],"Just Passing Through":["event",1,"M"],"Justice Served":["upgrade",1,"M"],"Kaluu":["ally",2,"E"],"Karen Page":["support",1,"E"],"Karma":["ally",4,"E"],"Karmic Blast":["event",2,"P"],"Karmic Staff":["upgrade",2,"E"],"Keen Instincts":["upgrade",1,"E"],"Keep Them Busy":["player_side_scheme",1,"P"],"Keep Up the Pressure":["player_side_scheme",0,"E"],"Kid Omega":["ally",2,"E"],"Kidpool":["ally",3,"P"],"Kimoyo Beads":["upgrade",2,"M"],"Kitty's Room":["support",1,"P"],"Knife Leap":["event",3,"P"],"Know Your Enemy":["event",1,"M"],"Knowhere":["support",2,"E"],"Kurt's Chapel":["support",1,"M"],"Kurt's Cutlasses":["upgrade",2,"P"],"Lady Deadpool":["ally",4,"P"],"Lady Sif":["ally",4,"W"],"Lady Spider":["ally",4,"M"],"Laser Blaster":["upgrade",1,"P"],"Laser Swords":["upgrade",3,"E"],"Lashing Vines":["upgrade",1,"E"],"Last Stand":["event",0,"M"],"Lay Down the Law":["event",1,"M"],"Lay the Trap":["player_side_scheme",1,"E"],"Lead from the Front":["event",2,"E"],"Leader of the Guardians":["upgrade",3,"M"],"Leadership Skill":["upgrade",1,"P"],"Leadership Training":["support",1,"M"],"Leading Blow":["event",0,"E"],"Legal Counsel":["resource",null,"W"],"Legal Practice":["event",0,"P"],"Legal Trouble":["upgrade",1,"M"],"Legion":["ally",3,"E"],"Legion: David Haller":["ally",3,"E"],"Leo Fitz":["support",3,"M"],"Lethal Intent":["event",-1,"M"],"Lie in Wait":["upgrade",1,"E"],"Life Model Decoy":["upgrade",2,"P"],"Lightning Bolt":["event",3,"E"],"Lightning Strike":["event",1,"M"],"Lightspeed Flight":["event",2,"M"],"Limbo":["support",1,"P"],"Limitless Stamina":["event",1,"P"],"Limitless Strength":["resource",null,"P"],"Lion of Olympus":["upgrade",0,"P"],"Live Dangerously":["player_side_scheme",0,"E"],"Living Lie Detector":["event",1,"E"],"Living Tribunal":["event",2,"M"],"Lock and Load":["player_side_scheme",1,"P"],"Locked and Loaded":["event",0,"M"],"Lockheed":["ally",2,"W"],"Lockjaw":["ally",4,"P"],"Logan's Cabin":["support",1,"M"],"Longshot":["ally",4,"M"],"Looking for Trouble":["event",0,"P"],"Luck Be a Lady":["event",1,"W"],"Lucky Break":["upgrade",0,"W"],"Lucky and Good":["upgrade",1,"W"],"Luke Cage":["ally",4,"E"],"Lunging Strike":["event",3,"P"],"M":["ally",4,"P"],"Machine Man":["ally",2,"P"],"Madame Web":["ally",3,"M"],"Made of Rage":["event",0,"E"],"Magic Attack":["event",1,"P"],"Magic Barrier":["event",1,"P"],"Magic Blast":["event",3,"E"],"Magic Shield":["upgrade",1,"P"],"Magical Enhancements":["upgrade",1,"E"],"Magik":["ally",3,"E"],"Magik's Crown":["upgrade",2,"M"],"Magnetic Bubble":["upgrade",3,"E"],"Magnetic Missile":["event",1,"P"],"Magneto's Armor":["upgrade",2,"P"],"Magneto's Cape":["upgrade",2,"E"],"Magneto's Helmet":["upgrade",3,"M"],"Major Victory":["ally",2,"M"],"Make Me Angry":["upgrade",1,"P"],"Make the Call":["event",0,"M"],"Making an Entrance":["event",1,"P"],"Malcolm":["ally",3,"W"],"Man on the Wall":["upgrade",1,"P"],"Manifold":["ally",3,"E"],"Mantis":["ally",2,"W"],"Maria Hill":["ally",2,"M"],"Mark V Armor":["upgrade",3,"M"],"Mark V Helmet":["upgrade",1,"P"],"Marked":["upgrade",0,"P"],"Marrow":["ally",2,"E"],"Marrow: Sarah":["ally",2,"E"],"Martial Arts Training":["upgrade",1,"P"],"Martial Prowess":["upgrade",2,"P"],"Martinex: T'Naga":["ally",3,"E"],"Martyr":["ally",4,"E"],"Marvel Boy":["ally",2,"P"],"Marvel Girl":["ally",3,"M"],"Mass Attack":["event",3,"P"],"Mass Increase":["event",1,"P"],"Master of Magnetism":["resource",null,"E"],"Master of the Mystic Arts":["event",1,"M"],"Maximum Effort":["event",0,"P"],"Maximum Velocity":["event",2,"P"],"Mean Swing":["event",0,"P"],"Med Lab":["support",1,"M"],"Med Team":["support",3,"E"],"Meditation":["event",0,"M"],"Melee":["event",3,"M"],"Melinda May":["ally",4,"M"],"Mental Detection":["event",2,"M"],"Mental Paralysis":["upgrade",2,"M"],"Metaknowledge":["event",1,"M"],"Metal Punch":["event",3,"P"],"Metal Shards":["event",3,"P"],"Metamorphosis":["event",2,"P"],"Mighty Avengers":["support",3,"E"],"Mind Control":["upgrade",4,"M"],"Mind Scan":["event",2,"M"],"Mirage":["ally",3,"M"],"Missile Launcher":["upgrade",1,"M"],"Mission Leader":["upgrade",2,"P"],"Mission Planning":["event",2,"M"],"Mission Training":["upgrade",1,"M"],"Misty Knight":["ally",4,"P"],"Mjolnir":["upgrade",1,"E"],"Mockingbird":["ally",3,"W"],"Moira MacTaggert":["support",2,"M"],"Molecular Acceleration":["resource",null,"P"],"Molecular Decay":["event",3,"E"],"Moment of Triumph":["event",0,"E"],"Momentum Shift":["event",2,"P"],"Monica Chang":["ally",3,"M"],"Montage":["resource",null,"W"],"Moon Girl":["ally",3,"M"],"Moondragon":["ally",3,"M"],"Morale Boost":["event",1,"E"],"Move in Shadow":["upgrade",2,"E"],"Moxie":["event",0,"M"],"Mr. Hollywood":["upgrade",1,"W"],"Ms. Marvel":["ally",3,"P"],"Mulligan":["event",3,"M"],"Multi-Gun":["upgrade",3,"W"],"Multiple Man":["ally",4,"M"],"Multitalented":["event",3,"P"],"Multitasking":["event",1,"P"],"Munitions Bunker":["support",2,"P"],"Muscle Memory":["upgrade",2,"P"],"Muster Courage":["event",3,"P"],"Mutant Education":["event",0,"E"],"Mutant Mayhem":["event",3,"E"],"Mutant Peacekeepers":["event",1,"P"],"Mutant Protectors":["event",1,"E"],"Mystic Senses":["upgrade",2,"M"],"Mystical Armor":["upgrade",1,"E"],"Mystical Studies":["event",1,"P"],"Nakia Bahadir":["support",1,"E"],"Namora":["ally",4,"P"],"Natural Agility":["event",0,"E"],"Natural Flight":["event",2,"E"],"Nebula":["ally",2,"W"],"Nebula's Ship":["support",2,"E"],"Negasonic Teenage Warhead":["ally",4,"M"],"Nelson and Murdock":["support",1,"E"],"Nemean Lion Skin":["upgrade",null,null],"Nerves of Steel":["upgrade",2,"E"],"Never Back Down":["event",1,"P"],"New Recruits":["player_side_scheme",0,"M"],"New and Improved":["event",3,"M"],"Nick Fury":["ally",4,"W"],"Nick Fury, Sr.":["ally",4,"M"],"Nightcrawler":["ally",3,"P"],"No Quarter":["event",2,"M"],"No, You Move!":["upgrade",0,"W"],"Noble Sacrifice":["event",1,"M"],"Northstar":["ally",3,"E"],"Not Today!":["event",1,"M"],"Not my Responsibility":["event",0,"M"],"Nova":["ally",4,"E"],"Nova Prime":["ally",5,"W"],"Okoye":["ally",4,"E"],"Olympus":["support",0,"E"],"On the Double":["event",0,"E"],"On the Prowl":["event",2,"M"],"One Way or Another":["event",0,"M"],"One by One":["event",1,"E"],"One-Two Punch":["event",1,"P"],"Operative Skill":["upgrade",2,"E"],"Ops Room":["support",2,"E"],"Order and Chaos":["event",1,"P"],"Organic Steel":["upgrade",2,"E"],"Organic Webbing":["upgrade",2,"M"],"Organizational Support":["resource",null,"M"],"Ororo's Garden":["support",1,"P"],"Outlaw":["ally",3,"W"],"Outta My Way!":["event",2,"P"],"Outwit":["upgrade",2,"M"],"Overwatch":["upgrade",0,"P"],"Pain Tolerance":["upgrade",2,"E"],"Pandapool":["ally",4,"P"],"Panther Claws":["upgrade",2,"E"],"Parental Guidance":["event",0,"E"],"Parry":["event",0,"E"],"Particle Cannon":["upgrade",3,"M"],"Passion for Justice":["resource",null,"W"],"Patriot":["ally",3,"P"],"Payback":["event",0,"E"],"Pepper Potts":["support",3,"P"],"Perseverance":["event",1,"M"],"Pete Wisdom":["ally",4,"M"],"Petulant Pig":["event",0,"M"],"Phantom Flip":["event",2,"E"],"Phase Disruption":["event",2,"E"],"Phase Strike":["event",3,"E"],"Phased Out":["event",0,"W"],"Phased and Confused":["upgrade",3,"M"],"Pheromones":["event",2,"P"],"Phoenix":["ally",3,"M"],"Phoenix Firebird":["event",1,"E"],"Phoenix Force":["upgrade",null,"M"],"Phoenix Suit":["upgrade",2,"P"],"Photographic Reflexes":["event",-1,"P"],"Photon":["upgrade",null,"M"],"Photon Beam":["event",2,"E"],"Photon Blasters":["upgrade",2,"M"],"Photon Speed":["event",2,"M"],"Photonic Blast":["event",3,"P"],"Piercing Strike":["event",2,"P"],"Pinned Down":["upgrade",0,"P"],"Pinpoint":["ally",2,"M"],"Pinpoint Strike":["event",3,"M"],"Piotr's Studio":["support",1,"M"],"Pip the Pug":["support",1,"W"],"Pip the Troll":["ally",2,"W"],"Pirouette and Punch":["event",2,"M"],"Pitchback":["event",1,"P"],"Pivotal Moment":["event",2,"P"],"Pixie":["ally",2,"E"],"Plan B":["upgrade",1,"P"],"Plan of Attack":["event",0,"M"],"Plasma Pistol":["upgrade",2,"E"],"Plasma Rifle":["upgrade",2,"P"],"Plasmoid Energy":["resource",null,"P"],"Plot Convenience":["support",2,"M"],"Polaris":["ally",3,"E"],"Pot Shot":["event",2,"E"],"Power Belt":["upgrade",2,"E"],"Power Gloves":["upgrade",1,"M"],"Power Man":["ally",3,"M"],"Power Within":["upgrade",1,"E"],"Powered Gauntlets":["upgrade",2,"E"],"Powerful Punch":["event",2,"P"],"Practiced Defense":["upgrade",0,"E"],"Practiced Plan":["upgrade",0,"E"],"Precision Strike":["event",1,"M"],"Precognition":["event",0,"M"],"Predictable Ploy":["event",2,"M"],"Preemptive Strike":["event",1,"E"],"Prehensile Tail":["upgrade",1,"P"],"Preservation":["resource",null,"W"],"Press the Advantage":["event",1,"M"],"Prince of Power":["upgrade",1,"P"],"Priority Target":["upgrade",0,"M"],"Prism Dust":["upgrade",1,"P"],"Probability Field":["upgrade",2,"W"],"Problem Solvers":["event",4,"P"],"Professor":["support",1,"M"],"Professor X":["ally",3,"M"],"Project Rebirth 2.0":["support",1,"P"],"Propulsion Jets":["upgrade",2,"P"],"Protective Training":["upgrade",1,"M"],"Protective Ward":["event",1,"P"],"Protector":["ally",4,"P"],"Provoked Response":["upgrade",0,"W"],"Psi-Bow Attack":["event",2,"E"],"Psi-Flail Strike":["event",2,"E"],"Psi-Knife":["upgrade",null,"M"],"Psimitar":["upgrade",2,"E"],"Psionic Redirect":["event",2,"M"],"Psionic Training":["upgrade",1,"M"],"Psychic Assault":["event",2,"E"],"Psychic Blast":["event",2,"E"],"Psychic Kicker":["event",0,"E"],"Psychic Link":["upgrade",2,"M"],"Psychic Manipulation":["event",3,"E"],"Psychic Misdirection":["event",2,"E"],"Psychic Rapport":["event",2,"E"],"Psylocke":["ally",3,"W"],"Pulsar":["upgrade",null,"E"],"Pulsar Shield":["event",1,"E"],"Pulse Grenade":["upgrade",2,"E"],"Puncture Wound":["upgrade",0,"P"],"Push Ahead":["event",3,"E"],"Pym Particles":["resource",null,"W"],"Quake":["ally",2,"E"],"Quantum Magic":["event",1,"E"],"Quasar":["ally",3,"E"],"Queen Ramonda":["support",1,"M"],"Quick Quip":["event",2,"M"],"Quick Shift":["event",0,"E"],"Quick Strike":["event",2,"P"],"Quicksilver":["ally",4,"W"],"Quincarrier":["support",3,"M"],"Quinjet":["support",1,"E"],"R&D Facility":["support",3,"M"],"Radar Sense":["upgrade",1,"E"],"Raising Hell":["event",2,"P"],"Rally the Troops":["player_side_scheme",0,"M"],"Randall":["ally",3,"W"],"Rapid Deployment":["event",2,"M"],"Rapid Growth":["event",1,"E"],"Rapid Response":["upgrade",2,"M"],"Raw Power":["resource",null,"W"],"Razor Dive":["event",3,"P"],"Ready for Action":["event",1,"M"],"Ready for a Fight":["upgrade",1,"P"],"Ready to Rumble":["upgrade",1,"E"],"Reboot":["event",1,"P"],"Recruited by Cap":["event",3,"W"],"Recruitment Drive":["support",3,"M"],"Recuperation":["event",2,"P"],"Red Dagger":["ally",3,"E"],"Red Room Training":["upgrade",2,"P"],"Redemption":["upgrade",null,"M"],"Redwing":["ally",2,"W"],"Regenerative Healing":["event",1,"E"],"Regenerative Longevity":["event",1,"E"],"Regroup":["support",1,"M"],"Reinforced Sinew":["upgrade",2,"P"],"Reinforced Suit":["upgrade",1,"E"],"Reinforcements":["event",1,"P"],"Relentless Assault":["event",2,"E"],"Reload":["event",1,"E"],"Render Medical Aid":["player_side_scheme",0,"M"],"Repulsor Beam":["event",1,"E"],"Repulsor Blast":["event",1,"P"],"Repurpose":["event",0,"E"],"Resize":["event",0,"P"],"Resource Reserve":["support",1,"P"],"Resourceful":["upgrade",1,"W"],"Return the Favor":["event",0,"E"],"Ricochet Beam":["event",2,"E"],"Rictor":["ally",3,"E"],"Right Place, Right Time":["event",2,"W"],"Riposte":["event",1,"E"],"Rise from the Ashes":["upgrade",3,"E"],"Rock, Paper, Scissors":["upgrade",1,"W"],"Rocket Boots":["upgrade",1,"M"],"Rocket Launcher":["upgrade",3,"P"],"Rocket Raccoon":["ally",3,"W"],"Rocket's Pistol":["upgrade",1,"E"],"Rockslide":["ally",4,"P"],"Rogue":["ally",4,"P"],"Rogue's Jacket":["upgrade",1,"E"],"Ronin":["upgrade",1,"M"],"Ronnie Williams":["support",1,"W"],"Root Stomp":["event",2,"P"],"Royal Flush":["event",3,"E"],"Ruby Quartz Visor":["upgrade",2,"P"],"Run and Gun":["event",3,"E"],"Running Interference":["event",2,"P"],"S.H.I.E.L.D. Deputy":["upgrade",0,"M"],"S.H.I.E.L.D. Director":["upgrade",2,"M"],"S.H.I.E.L.D. Sidearm":["upgrade",1,"M"],"SP//dr":["ally",2,"E"],"SP//dr Command":["support",1,"M"],"Safe House #221":["support",1,"M"],"Safe House #29":["support",1,"P"],"Safe House #30":["support",1,"M"],"Salvage":["resource",null,"M"],"Sanctum Sanctorum":["support",1,"M"],"Savage Attack":["event",2,"P"],"Save the Day":["event",1,"M"],"Scare Tactic":["event",1,"M"],"Scarlet Spider":["ally",4,"M"],"Scarlet Witch":["ally",3,"W"],"Scarlet Witch's Crest":["upgrade",2,"E"],"Schadenfreude":["event",2,"P"],"Scorched Earth":["event",3,"M"],"Scout Ahead":["event",1,"E"],"Scrying":["event",0,"M"],"Second Wind":["event",3,"M"],"Secret Agent":["upgrade",2,"P"],"Secret Contact":["resource",null,"W"],"Sector Scan":["event",3,"E"],"See No Evil, Hear No Evil":["event",2,"W"],"Self Confidence":["resource",null,"P"],"Self Control":["resource",null,"M"],"Self Preservation":["resource",null,"E"],"Self-Propelled Glide":["event",1,"M"],"Sense of Justice":["upgrade",2,"M"],"Sentry":["ally",4,"E"],"Serval Industries":["support",1,"M"],"Serve and Protect":["event",2,"M"],"Set the Pace":["event",0,"P"],"Seven Rings of Raggadorr":["event",1,null],"Shadow and Steel":["event",2,"P"],"Shadowcat":["ally",3,"W"],"Shadowcat Surprise":["event",2,"P"],"Shake it Off":["event",1,"E"],"Shark-Girl":["ally",2,"E"],"Sharpshooter":["upgrade",2,"E"],"Shatterstar":["ally",4,"M"],"She-Hulk":["ally",4,"P"],"She-Hulk Smash":["event",2,"W"],"Shield Block":["event",0,"M"],"Shield Spell":["event",0,"E"],"Shield Toss":["event",0,"E"],"Shield of Perseus":["upgrade",null,null],"Shieldmaiden":["event",1,"P"],"Shopping Spree":["player_side_scheme",0,"W"],"Shoulder Cannon":["upgrade",2,"E"],"Show of Empathy":["player_side_scheme",0,"E"],"Shrink":["upgrade",2,"M"],"Shuri":["ally",2,"P"],"Side Holster":["upgrade",0,"P"],"Side Step":["event",1,"M"],"Side-by-Side":["event",2,"E"],"Sidearm":["upgrade",1,"P"],"Sidekick":["upgrade",1,"W"],"Signature Sunglasses":["upgrade",1,"P"],"Silent Infiltration":["upgrade",2,"M"],"Silk":["ally",2,"E"],"Siryn":["ally",4,"E"],"Sister Maggie":["support",2,"M"],"Sisterhood":["support",2,"M"],"Sisterly Bond":["event",0,"W"],"Skilled Investigator":["upgrade",0,"P"],"Skilled Strike":["event",0,"P"],"Sky Cycle":["upgrade",1,"E"],"Sky-Destroyer":["support",3,"E"],"Slice and Dice":["event",3,"E"],"Sliding Shot":["event",3,"P"],"Slingshot":["ally",3,"E"],"Smash the Problem":["event",1,"M"],"Smooth as Silk":["event",0,"E"],"Sneak Attack":["event",1,"P"],"Sneak By":["event",2,"M"],"Snow Clone":["ally",2,"P"],"Snowguard":["ally",4,"E"],"Soaring Acrobatics":["upgrade",2,"P"],"Soaring Hearts":["event",2,"W"],"Solar Beam":["event",3,"E"],"Solar Gem":["upgrade",2,"W"],"Solid":["upgrade",null,"P"],"Son of Zeus":["event",2,"E"],"Sonic Arrow":["event",2,"M"],"Sonic Rifle":["upgrade",3,"M"],"Soul Sisters":["event",1,"E"],"Soul Strike":["event",2,"M"],"Soul World":["support",1,"M"],"Soulsword":["upgrade",1,"P"],"Soup Kitchen":["support",1,"M"],"Southern Cross":["event",3,"P"],"Special Funding":["resource",null,"P"],"Specialized Training":["player_side_scheme",1,"M"],"Spectrum":["ally",5,"E"],"Speed":["ally",4,"P"],"Speed Cyclone":["event",-1,"E"],"Speed of Light":["event",0,"W"],"Speed-Metal Alloy":["upgrade",1,"P"],"Spider Bites":["upgrade",2,"E"],"Spider Claws":["upgrade",2,"P"],"Spider Reflexes":["upgrade",2,"P"],"Spider-Blast":["event",2,"W"],"Spider-Byte":["ally",3,"M"],"Spider-Girl":["ally",2,"E"],"Spider-Ham":["ally",3,"P"],"Spider-Man":["ally",5,"M"],"Spider-Man 2099":["ally",4,"E"],"Spider-Man Noir":["ally",3,"E"],"Spider-Man: Hobie Brown":["ally",3,"P"],"Spider-Man: Peter Parker":["ally",3,"M"],"Spider-Sense":["upgrade",2,"M"],"Spider-Tingle":["upgrade",1,"M"],"Spider-Tracer":["upgrade",1,"E"],"Spider-UK":["ally",3,"P"],"Spider-Woman":["ally",3,"W"],"Spiritual Meditation":["event",0,"M"],"Split Personality":["event",3,"E"],"Spoiling for a Fight":["event",0,"E"],"Spray Fire":["event",3,"P"],"Spycraft":["upgrade",1,"P"],"Squared Off":["event",0,"P"],"Squirrel Girl":["ally",2,"M"],"Stand Alone":["upgrade",1,"E"],"Stand Together":["event",4,"E"],"Star-Lord":["ally",2,"M"],"Star-Lord's Helmet":["upgrade",1,"M"],"Starhawk":["ally",2,"P"],"Stark Tower":["support",2,"M"],"Starstruck":["event",1,"E"],"Stealth Strike":["event",3,"M"],"Stealth Training":["upgrade",2,"P"],"Steel Fist":["event",2,"P"],"Stepford Cuckoos":["support",3,"M"],"Stepping Disc":["event",1,"E"],"Steve's Apartment":["support",1,"E"],"Stick":["support",2,"P"],"Stick-To-Itiveness":["upgrade",2,"E"],"Sting Operation":["upgrade",2,"P"],"Stinger":["ally",1,"E"],"Stored Energy":["resource",null,"P"],"Storm":["ally",5,"E"],"Storm's Cape":["upgrade",3,"E"],"Storm's Crown":["upgrade",2,"M"],"Strength":["resource",null,"P"],"Strength In Numbers":["event",0,"P"],"Strength in Diversity":["event",2,"W"],"Stroke of Genius":["resource",null,"M"],"Stronger Together":["event",0,"E"],"Study the Tape":["event",0,"M"],"Stun Gun":["upgrade",2,"E"],"Sub-Orbital Leap":["event",3,"P"],"Subdue":["event",1,"E"],"Suit Up":["event",2,"P"],"Summoning Spell":["event",2,"M"],"Sunfire":["ally",2,"E"],"Sunspot":["ally",3,"E"],"Super Spies":["event",0,"W"],"Super-Charged":["upgrade",0,"M"],"Super-Soldier Serum":["upgrade",2,"P"],"Super-Soldiers":["event",3,"P"],"Superdense Strike":["event",2,"P"],"Superhuman Law Division":["support",1,"P"],"Superhuman Strength":["upgrade",2,"M"],"Superior Taste":["upgrade",1,"M"],"Supernova Helmet":["upgrade",1,"M"],"Superpower Adaptation":["event",0,"M"],"Superpower Training":["player_side_scheme",1,"E"],"Supersonic Punch":["event",2,"E"],"Support Staff":["support",1,"M"],"Suppressing Fire":["upgrade",0,"M"],"Surge":["ally",2,"E"],"Surprise Attack":["event",1,"P"],"Surprise Move":["event",1,"M"],"Surveillance Specialist":["upgrade",2,"W"],"Surveillance Team":["support",2,"M"],"Swarm Tactics":["event",1,"M"],"Swift Retribution":["event",1,"M"],"Swing In":["event",2,"E"],"Swinging Silk Kick":["event",3,"P"],"Swinging Web Kick":["event",3,"M"],"Swinging Web Pig":["event",3,"E"],"Sword of Peleus":["upgrade",null,null],"Swordsman":["ally",4,"P"],"Symbiote Suit":["upgrade",4,"W"],"Synch":["ally",3,"E"],"Synth-Suit":["upgrade",3,"E"],"Synthezoid Strike":["event",2,"W"],"T'Challa":["ally",4,"W"],"Tac Team":["support",3,"E"],"Tackle":["event",3,"P"],"Tactical Brilliance":["event",2,"M"],"Tactical Genius":["upgrade",2,"P"],"Take Out the Guards":["player_side_scheme",0,"M"],"Take That!":["event",3,"E"],"Tally Ho!":["event",1,"E"],"Talon Line":["upgrade",2,"P"],"Target Acquired":["upgrade",1,"P"],"Target Lock":["event",2,"W"],"Target Practice":["support",0,"M"],"Target Spotter":["support",1,"M"],"Targeted Strike":["event",1,"E"],"Taunt":["event",1,"P"],"Team Investigation":["event",2,"M"],"Team Strike":["event",1,"E"],"Team Training":["support",2,"P"],"Team-Building Exercise":["support",2,"P"],"Teamwork":["event",0,"E"],"Techno-Organic Wings":["upgrade",3,"E"],"Technovirus Purge":["player_side_scheme",0,"E"],"Telekinesis":["upgrade",1,"M"],"Telekinetic Attack":["event",3,"P"],"Telekinetic Blast":["event",3,"E"],"Telekinetic Force Field":["upgrade",2,"P"],"Telekinetic Shield":["upgrade",2,"P"],"Telepathic Suggestion":["event",2,"E"],"Telepathic Trickery":["event",2,"M"],"Telepathy":["upgrade",1,"E"],"Teleport Drop":["event",2,"E"],"Temporal Leap":["upgrade",2,"P"],"Tempus":["ally",2,"M"],"Tenacity":["upgrade",2,"E"],"Test the Defense":["upgrade",1,"M"],"The Bellerophon":["support",6,"E"],"The Best Defense\u2026":["event",0,"P"],"The Best Offense...":["upgrade",1,"M"],"The Bifrost":["support",1,"E"],"The Circe":["support",6,"P"],"The Daily Beagle":["support",2,"M"],"The Direct Approach":["upgrade",1,"E"],"The Douglass":["support",6,"M"],"The Elephant's Trunk":["support",2,"E"],"The Eye of Agamotto":["upgrade",2,"E"],"The Futurist":["event",2,"W"],"The Gardener":["event",2,"P"],"The Gift of Battle":["event",3,"P"],"The Golden City":["support",2,"E"],"The Hard Call":["event",2,"M"],"The Iliad":["support",6,"E"],"The Locust":["ally",2,"E"],"The Man Without Fear":["upgrade",2,"P"],"The Night Nurse":["support",1,"M"],"The Painted Lady":["support",1,"W"],"The People's Hero":["resource",null,"W"],"The Pericles":["support",6,"E"],"The Posse":["event",2,"W"],"The Power in All of Us":["resource",null,"W"],"The Power of Aggression":["resource",null,"W"],"The Power of Flight":["resource",null,"E"],"The Power of Justice":["resource",null,"W"],"The Power of Leadership":["resource",null,"W"],"The Power of Protection":["resource",null,"W"],"The Power of the Mind":["resource",null,"M"],"The Raft":["support",2,"P"],"The Rez":["support",1,"E"],"The Sorcerer Supreme":["upgrade",2,"M"],"The Thieves Guild":["support",1,"M"],"The Triskelion":["support",1,"E"],"The X-Jet":["support",3,"E"],"This Card is Fire":["event",3,"P"],"Thor":["ally",4,"E"],"Thor's Helmet":["upgrade",2,"M"],"Three Steps Ahead":["event",3,"M"],"Throg":["ally",2,"E"],"Thruster Boots":["upgrade",1,"M"],"Thunderclap":["event",3,"P"],"Thunderstorm":["support",null,"E"],"Thwip Thwip!":["event",2,"M"],"Tic-Tac-Toe":["upgrade",0,"M"],"Ticket to the Multiverse":["upgrade",3,"W"],"Tigra":["ally",3,"M"],"Tigra: Greer Grant Nelson":["ally",3,"M"],"Titania: Mary MacPherran":["ally",4,"W"],"Titanium Muscles":["upgrade",2,"P"],"To the Rescue!":["event",2,"P"],"Toe to Toe":["event",1,"M"],"Tony Stark A.I.":["support",2,"M"],"Too Stubborn to Die":["upgrade",2,"M"],"Torrential Rain":["event",2,"M"],"Touched":["upgrade",null,"P"],"Track by Scent":["event",2,"M"],"Training Regimen":["support",1,"P"],"Triage":["ally",2,"E"],"Triage: Christopher Muse":["ally",2,"E"],"True Grit":["event",1,"E"],"Turn the Tide":["event",0,"E"],"Two Against the World":["event",3,"E"],"U.S. Agent":["ally",3,"M"],"Uncanny X-Force":["support",2,"E"],"Uncanny X-Men":["support",3,"M"],"Under Control":["upgrade",0,"E"],"Under Surveillance":["upgrade",2,"E"],"Unflappable":["upgrade",1,"M"],"Unified Strike":["event",0,"E"],"United We Stand":["event",0,"P"],"Unleash Nova Force":["event",1,"E"],"Unlikely Duo":["event",2,"W"],"Unshakable":["upgrade",1,"P"],"Unstoppable Force":["event",2,"P"],"Unyielding Persistence":["upgrade",1,"M"],"Up, Up, and Away":["event",0,"E"],"Upgraded Chassis":["upgrade",3,"M"],"Uppercut":["event",3,"P"],"Upside the Head":["event",1,"M"],"Utopia":["support",2,"P"],"VEN#m":["ally",4,"E"],"Valhalla":["support",2,"M"],"Valkyrie":["ally",3,"E"],"Valkyrie's Spear":["upgrade",1,"P"],"Vapors of Valtorr":["event",0,null],"Venom":["ally",4,"E"],"Venom Blast":["event",2,"E"],"Venom's Pistol":["upgrade",1,"E"],"Venom: Eddie Brock":["ally",4,"W"],"Vibranium":["resource",null,"W"],"Vibranium Arrow":["event",2,"E"],"Vibranium Microweave":["upgrade",2,"E"],"Vibranium Suit":["upgrade",2,"M"],"Victor Mancha":["ally",2,"E"],"Victoria Hand":["ally",3,"M"],"Vigilante Training":["support",1,"M"],"Vine Shield":["upgrade",1,"P"],"Vine Spikes":["upgrade",1,"P"],"Vision":["ally",4,"P"],"Vision's Cape":["upgrade",2,"P"],"Visit Valhalla":["event",0,"P"],"Vivian":["ally",2,"M"],"Wakanda Forever!":["event",1,"W"],"Wallcrawl":["event",1,"M"],"War":["upgrade",1,"P"],"War Machine":["ally",4,"M"],"War Machine: James Rhodes":["ally",4,"M"],"War Room":["support",1,"M"],"Warlock":["ally",3,"P"],"Warlock's Cape":["upgrade",2,"P"],"Warning":["event",0,"P"],"Warp Reality":["event",1,"P"],"Warpath":["ally",4,"E"],"Warrior Skill":["upgrade",2,"M"],"Warrior of the Great Web":["upgrade",1,"E"],"Wasp":["ally",2,"P"],"Wasp Sting":["event",2,"M"],"Wasp's Helmet":["upgrade",2,"P"],"Waylay":["event",3,"P"],"Weapon X":["support",1,"M"],"Weapons Master":["upgrade",1,"P"],"Weapons Training":["upgrade",2,"P"],"Weather Goddess":["event",0,"E"],"Web Binding":["event",2,"M"],"Web of Life and Destiny":["support",3,"E"],"Web-Bracelet":["upgrade",2,"P"],"Web-Fluid Compressor":["upgrade",2,"E"],"Web-Shooter":["upgrade",1,"P"],"Web-Shot":["event",2,"M"],"Web-Trap":["event",2,"E"],"Webbed Up":["upgrade",4,"P"],"What Doesn't Kill Me":["event",2,"P"],"Whirlwind: David Cannon":["ally",4,"W"],"White Fox":["ally",3,"E"],"White Fox: Ami Han":["ally",3,"E"],"White Hot Room":["support",2,"M"],"White Queen":["ally",3,"E"],"White Tiger":["ally",3,"E"],"White Widow":["ally",4,"M"],"White Wolf":["ally",3,"P"],"Wiccan":["ally",2,"M"],"Wide Stance":["upgrade",1,"E"],"Widow's Bite":["upgrade",1,"E"],"Wiggle Room":["event",0,"E"],"Winds of Watoomb":["event",0,null],"Wingman":["upgrade",0,"M"],"Winter Armor":["upgrade",2,"P"],"Winter Mask":["upgrade",1,"M"],"Winter Rifle":["upgrade",3,"E"],"Winter Soldier":["ally",3,"M"],"Winter, Widow, Soldier, Spy":["event",2,"E"],"Wisdom of Athena":["event",3,"M"],"Wolfsbane":["ally",3,"P"],"Wolverine":["ally",4,"W"],"Wolverine's Claws":["upgrade",null,"P"],"Won't Stay Down":["support",1,"P"],"Wonder Fans":["support",1,"W"],"Wonder Man":["ally",2,"P"],"Wong":["ally",3,"W"],"Worthington Industries":["support",1,"M"],"Wraith":["ally",3,"P"],"Wrapped in Metal":["upgrade",2,"M"],"Wrist Gauntlets":["upgrade",1,"M"],"X-23":["ally",3,"P"],"X-23's Claws":["upgrade",null,"P"],"X-Bunker":["support",2,"E"],"X-Force Recruit":["upgrade",0,"P"],"X-Gene":["upgrade",1,"W"],"X-Mansion":["support",2,"M"],"X-Men Instruction":["event",0,"E"],"Yaw and Roll":["event",1,"E"],"Yellow Jacket: Hank Pym":["ally",3,"E"],"Yondu":["ally",4,"E"],"You Started This":["event",2,"W"],"You're Out of Order!":["event",1,"W"],"Young Love":["event",1,"W"],"Zone of Silence":["event",1,"M"],"Zzzax":["ally",3,"W"]};
+const TYPE_GROUP_ORDER = ["ally","event","player_side_scheme","resource","support","upgrade"];
+const TYPE_GROUP_LABELS = {ally:"Ally",event:"Event",player_side_scheme:"Side Scheme",resource:"Resource",support:"Support",upgrade:"Upgrade"};
+// POOL_TABS: the fixed tab row shown under "Card Pool" in the deck/preset
+// editor, replacing the old Aspect <select>. Order is fixed regardless of the
+// deck's current aspect — the four classic aspects, then the two always-on
+// auxiliary pools, then Pool last (Deadpool's home aspect, not one of the
+// classic four, so it's visually separated at the end). Clicking one of the
+// five HOME_ASPECTS tabs (Aggression/Justice/Leadership/Protection/Pool) sets
+// the deck's home aspect; clicking Basic or Campaign only changes which pool
+// is being browsed, since neither is a home aspect a hero can commit to.
+const POOL_TABS = ["Aggression","Justice","Leadership","Protection","Basic","Campaign","Pool"];
+// TYPE_TABS: second-row filter for the currently-browsed pool. "All" restores
+// the grouped-by-type view (the original behavior); any other tab flattens
+// the list to just that type, unsorted into groups.
+const TYPE_TABS = ["All","Ally","Event","Side Scheme","Resource","Support","Upgrade"];
+const TYPE_TAB_CODES = {Ally:"ally",Event:"event","Side Scheme":"player_side_scheme",Resource:"resource",Support:"support",Upgrade:"upgrade"};
+function cardMetaBadge(name){
+  const m = CARD_META[name];
+  if(!m) return "";
+  const resource = m[2], cost = m[1];
+  const resHTML = resource ? `<span class="res-dot res-${resource.toLowerCase()}">${resource}</span>` : "";
+  const costHTML = (cost!=null) ? `<span class="cost-badge">${cost}</span>` : "";
+  return (resHTML||costHTML) ? `<span class="cmeta">${resHTML}${costHTML}</span>` : "";
+}
+// Groups a list of {name,qty,phaseId} pool cards by CARD_META type_code, in the
+// same order MarvelCDB's own deckbuilder groups them (Ally/Event/Side Scheme/
+// Resource/Support/Upgrade), with an "Other" group last for anything without
+// CARD_META coverage yet. Each group is rendered as a header + its rows.
+function groupedCardRows(available, selectedList, kind, rowFn){
+  const buckets = {};
+  const other = [];
+  available.forEach(c=>{
+    const m = CARD_META[c.name];
+    const t = m ? m[0] : null;
+    if(t && TYPE_GROUP_LABELS[t]) (buckets[t] = buckets[t]||[]).push(c);
+    else other.push(c);
+  });
+  let html = "";
+  TYPE_GROUP_ORDER.forEach(t=>{
+    const list = buckets[t];
+    if(!list || !list.length) return;
+    list.sort((a,b)=>a.name.localeCompare(b.name));
+    html += `<div class="type-group-header">${TYPE_GROUP_LABELS[t]}</div>`;
+    html += list.map(c=>rowFn(c.name, c.qty, qtyOf(selectedList,c.name), kind)).join("");
+  });
+  if(other.length){
+    other.sort((a,b)=>a.name.localeCompare(b.name));
+    html += `<div class="type-group-header">Other</div>`;
+    html += other.map(c=>rowFn(c.name, c.qty, qtyOf(selectedList,c.name), kind)).join("");
+  }
+  return html;
+}
+// Gathers every card actually selected for a deck/preset — its home aspect
+// pool plus the two always-on auxiliary pools, Basic and Campaign (mirroring
+// exactly what cardTotal()/presetTotal() count as "in the deck"). Cards left
+// behind in a since-abandoned aspect pool (e.g. after switching the home
+// aspect tab) are intentionally excluded here, same as they're excluded from
+// the legal count.
+function selectedDeckCards(pools, aspect){
+  const out = [];
+  [aspect, "Basic", "Campaign"].forEach(bucket=>{
+    (pools[bucket]||[]).forEach(c=>{ if(c.qty>0) out.push(c); });
+  });
+  return out;
+}
+// Renders the always-visible "Your Deck" summary — every selected card,
+// grouped by type exactly like the browse list, but read-only (no steppers).
+// This is what MarvelCDB's own deckbuilder shows permanently on the left; our
+// single-column layout puts it in its own section above Card Pool instead, so
+// it's never ambiguous whether tapping a number in the pool below actually
+// added the card.
+function selectedDeckCardsHTML(list){
+  if(!list.length) return `<p class="deck-note">No cards added yet — browse the Card Pool below and tap a number to add cards.</p>`;
+  const buckets = {};
+  const other = [];
+  list.forEach(c=>{
+    const m = CARD_META[c.name];
+    const t = m ? m[0] : null;
+    if(t && TYPE_GROUP_LABELS[t]) (buckets[t] = buckets[t]||[]).push(c);
+    else other.push(c);
+  });
+  const rowHTML = c => `<li><span class="n">${c.name} ${cardMetaBadge(c.name)}</span><span class="q">${c.qty}x</span></li>`;
+  let html = "";
+  TYPE_GROUP_ORDER.forEach(t=>{
+    const l = buckets[t];
+    if(!l || !l.length) return;
+    l.sort((a,b)=>a.name.localeCompare(b.name));
+    const count = l.reduce((s,c)=>s+c.qty,0);
+    html += `<div class="type-group-header">${TYPE_GROUP_LABELS[t]} (${count})</div><ul class="deck-list">${l.map(rowHTML).join("")}</ul>`;
+  });
+  if(other.length){
+    other.sort((a,b)=>a.name.localeCompare(b.name));
+    const count = other.reduce((s,c)=>s+c.qty,0);
+    html += `<div class="type-group-header">Other (${count})</div><ul class="deck-list">${other.map(rowHTML).join("")}</ul>`;
+  }
+  return html;
+}
 // Verified complete Core Set card list, pulled directly from the official set
 // page at https://marvelcdb.com/set/core (205 total cards; filtered here to
 // just the Aggression/Justice/Leadership/Protection/Basic "Class" rows, which
@@ -981,6 +1137,19 @@ const CORE_SET_SEED = {
   Protection: [["Black Widow",1],["Luke Cage",1],["Counter-Punch",3],["Get Behind Me!",3],["The Power of Protection",2],["Med Team",3],["Armored Vest",3],["Indomitable",3]]
 };
 const CORE_SET_BASIC_SEED = [["Mockingbird",1],["Nick Fury",1],["Emergency",3],["First Aid",3],["Haymaker",3],["Energy",1],["Genius",1],["Strength",1],["Avengers Mansion",3],["Helicarrier",3],["Tenacity",3]];
+// CAMPAIGN_SEED: the real neutral/basic-faction bonus cards bundled into each
+// Campaign Expansion box (Rise of Red Skull, Galaxy's Most Wanted, Mad Titan's
+// Shadow, Sinister Motives, Mutant Genesis, NeXt Evolution, Age of Apocalypse,
+// Agents of S.H.I.E.L.D., Fear No Evil) — sourced from MarvelCDB's public API
+// (per-pack card data filtered to faction:"basic", cross-checked via each
+// card's individual endpoint for exact deck_limit). These are usable by any
+// deck regardless of aspect, same as Basic, but tracked as their own pool
+// since they represent cards unlocked through campaign play rather than
+// always-available box contents. Leader-mode-only cards (Civil War, Synthezoid
+// Smackdown) and scenario-linked modular allies (Trickster Takeover) are
+// intentionally excluded — they require a special multiplayer leader identity
+// or are tied to a specific villain's modular set, not usable in a normal deck.
+const CAMPAIGN_SEED = [["War Machine: James Rhodes",1],["Avengers Tower",1],["Earth's Mightiest Heroes",3],["Energy",1],["Genius",1],["Strength",1],["Booster Boots",1],["Deft Focus",3],["Flora and Fauna",1],["Groot",1],["Rocket Raccoon",1],["Avengers Mansion",3],["Blade: Eric Brooks",1],["Martinex: T'Naga",1],["Ready to Rumble",3],["Across the Spider-Verse",2],["Agent 13",1],["Dum Dum Dugan",1],["Ghost-Spider: Gwen Stacy",1],["Government Liaison",3],["Plan B",3],["Sky-Destroyer",1],["Spider-Man: Hobie Brown",1],["Spider-Man: Peter Parker",1],["Symbiote Suit",1],["Venom: Eddie Brock",1],["Web of Life and Destiny",1],["Young Love",1],["Colossus",1],["Professor X",1],["Shadow and Steel",1],["The X-Jet",1],["X-Mansion",1],["Atlas Bear: Shoon'kwa",1],["Build Support",1],["Deadpool: Wade Wilson",1],["Deathlok: Unit L17",1],["Digging Deep",3],["Frenemies",1],["Hope Summers",1],["Psimitar",1],["Sharpshooter",3],["Sidearm",3],["Superpower Training",1],["The Posse",1],["The Power of the Mind",3],["White Fox: Ami Han",1],["Basic Spell",3],["Bloodgem",1],["Legion: David Haller",1],["Marrow: Sarah",1],["Spiritual Meditation",3],["Stepford Cuckoos",1],["Triage: Christopher Muse",1],["Front Organization",3],["Grant Ward",1],["Jemma Simmons",1],["Leo Fitz",1],["Melinda May",1],["Nick Fury, Sr.",1],["Practiced Plan",3],["Super Spies",2],["Contingency Planning",3],["Dance with the Devil",2],["See No Evil, Hear No Evil",2],["Stick",1]];
 // Fallback only for the rare case a card shows up with no quantity data from
 // any source (should not normally happen now that every hero and Core Set
 // carries real per-card deck_limit values).
@@ -1017,6 +1186,10 @@ function isCoreSetCard(name, aspect){
     entries.forEach(([name,qty]) => mergeInto(ASPECT_POOL[aspect], name, 0, qty));
   });
   CORE_SET_BASIC_SEED.forEach(([name,qty]) => basicMap.set(name, {phaseId:0, qty}));
+  // Campaign pool is seeded directly (unlike Aggression/Justice/Leadership/
+  // Protection/Pool, no hero's DECKS entry ever contributes to it) — these are
+  // neutral campaign-box bonus cards, not any hero's own card list.
+  CAMPAIGN_SEED.forEach(([name,qty]) => mergeInto(ASPECT_POOL.Campaign, name, 0, qty));
   // Then layer in each catalogued hero pack's aspectCards/basics/bonus. A pack's
   // aspectCards/basics list is that pack's full assortment for its aspect AS OF
   // that pack's release, which includes reprints of the Core Set cards above
@@ -1085,7 +1258,11 @@ function defaultState(){
   return {
     stateSchemaVersion: 2,
     heroBenchmarks: {}, // id -> {notes}  (preconStd/preconExp/customExp are now DERIVED from plays, not stored)
-    scenarioUnlocked: {}, // id -> bool
+    scenarioUnlocked: {rhino:true, klaw:true, ultron:true}, // id -> bool. Core Set scenarios start unlocked — no purchase/campaign gate applies to them.
+    // _coreSetSeeded intentionally omitted here (left undefined) — see loadState().
+    // Object.assign(defaultState(), parsed) only overrides keys parsed actually has,
+    // so if this were set to true by default it would silently mask the one-time
+    // migration below for every already-saved state that predates this field.
     campaignComplete: {}, // phaseId -> bool
     fneOrder: {}, // scenarioId -> order number (1-5) for Fear No Evil sandbox
     fneHero: "", // chosen campaign hero id
@@ -1168,19 +1345,369 @@ function migrateV1ToV2(rawV1){
 }
 
 let STATE = loadState();
+// Non-destructive lazy migration: older saved decks/presets used two fixed
+// buckets (cards for the chosen aspect, basics for Basic cards). The
+// deckbuilder now treats every pool (including Basic and Campaign) as an
+// on-demand browsable bucket instead of a permanently-visible section, so
+// each deck/preset needs a `pools` map instead. Old `cards`/`basics` fields
+// are left in place (harmless, just unread) rather than deleted.
+function normalizePools(obj){
+  if(!obj.pools){
+    obj.pools = { [obj.aspect]: obj.cards || [], Basic: obj.basics || [], Campaign: [] };
+  }
+  if(!obj.pools[obj.aspect]) obj.pools[obj.aspect] = [];
+  if(!obj.pools.Basic) obj.pools.Basic = [];
+  if(!obj.pools.Campaign) obj.pools.Campaign = [];
+  if(obj.browseTab == null) obj.browseTab = obj.aspect;
+  return obj;
+}
 function loadState(){
   try{
     const rawV2 = localStorage.getItem(STORE_KEY);
+    let state;
     if(rawV2){
       const parsed = JSON.parse(rawV2);
-      return Object.assign(defaultState(), parsed);
+      state = Object.assign(defaultState(), parsed);
+    } else {
+      const rawV1 = localStorage.getItem(STORE_KEY_V1);
+      state = rawV1 ? migrateV1ToV2(rawV1) : defaultState();
     }
-    const rawV1 = localStorage.getItem(STORE_KEY_V1);
-    if(rawV1) return migrateV1ToV2(rawV1);
-    return defaultState();
+    (state.decks||[]).forEach(normalizePools);
+    (state.aspectPresets||[]).forEach(normalizePools);
+    // One-time seed: Core Set requires no purchase or campaign progress to
+    // unlock — Rhino/Klaw/Ultron should show up under "Unlocked scenarios
+    // only" from the very start, same as any hero's precon being playable
+    // day one. Only fills in scenarios the user has never touched (undefined,
+    // not explicitly toggled off) and only runs once per saved state, so it
+    // never fights a deliberate un-click later.
+    if(!state._coreSetSeeded){
+      ["rhino","klaw","ultron"].forEach(id=>{
+        if(state.scenarioUnlocked[id] === undefined) state.scenarioUnlocked[id] = true;
+      });
+      state._coreSetSeeded = true;
+      try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+    }
+    return state;
   }catch(e){ return defaultState(); }
 }
-function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }
+function saveState(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+  scheduleGithubPush();
+}
+
+/* ============================= GitHub Sync (optional) =============================
+   Mirrors the Arnak Game Night Tracker's GitHub Pages setup: connection details
+   (owner/repo/path/branch/fine-grained PAT) live only in this browser's
+   localStorage, never inside STATE itself (STATE is exactly what gets written
+   to the repo, so it must not carry the token). The repo's JSON file is read
+   and written through GitHub's Contents API. Every write is a git commit, so
+   the user gets free version history / undo from GitHub itself.
+   Entirely optional — nothing above this point (or below) requires a
+   connection to exist; the app works purely from localStorage otherwise. */
+const GITHUB_CONN_KEY = "mcTracker_githubConn";
+function getGithubConn(){
+  try{ return JSON.parse(localStorage.getItem(GITHUB_CONN_KEY)); }catch(e){ return null; }
+}
+function saveGithubConn(conn){ localStorage.setItem(GITHUB_CONN_KEY, JSON.stringify(conn)); }
+function clearGithubConn(){ localStorage.removeItem(GITHUB_CONN_KEY); }
+
+function escHtml(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+// UTF-8 safe base64 (the GitHub Contents API transports file bodies as base64;
+// plain btoa()/atob() choke on any non-Latin1 character, e.g. curly quotes).
+function b64EncodeUtf8(str){ return btoa(unescape(encodeURIComponent(str))); }
+function b64DecodeUtf8(b64){ return decodeURIComponent(escape(atob(b64.replace(/\n/g,"")))); }
+
+function githubContentsUrl(conn){
+  const pathParts = conn.path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  return `https://api.github.com/repos/${encodeURIComponent(conn.owner)}/${encodeURIComponent(conn.repo)}/contents/${pathParts}`;
+}
+function githubHeaders(conn){
+  return {
+    "Authorization": `Bearer ${conn.token}`,
+    "Accept": "application/vnd.github+json"
+  };
+}
+// Returns {content, sha}. content is null (sha null) if the file doesn't exist
+// yet — that's expected the very first time a fresh data repo is connected.
+async function githubReadFile(conn){
+  let res;
+  try{
+    res = await fetch(`${githubContentsUrl(conn)}?ref=${encodeURIComponent(conn.branch||"main")}`, { headers: githubHeaders(conn) });
+  }catch(e){ throw new Error("Could not reach GitHub"); }
+  if(res.status === 404) return { content:null, sha:null };
+  if(!res.ok) throw new Error("GitHub read failed ("+res.status+")");
+  const json = await res.json();
+  const content = json.content ? JSON.parse(b64DecodeUtf8(json.content)) : null;
+  return { content, sha: json.sha };
+}
+// Creates or updates the file. Pass the last-known sha for an update (omit/null
+// to create). On a stale-sha conflict (someone else committed in between) it
+// refetches the current sha and retries exactly once before giving up.
+async function githubWriteFile(conn, dataObj, sha, message){
+  const url = githubContentsUrl(conn);
+  const makeBody = (theSha)=>{
+    const body = {
+      message: message || "Update tracker data",
+      content: b64EncodeUtf8(JSON.stringify(dataObj, null, 2)),
+      branch: conn.branch || "main"
+    };
+    if(theSha) body.sha = theSha;
+    return body;
+  };
+  const doPut = async (theSha)=>{
+    let res;
+    try{
+      res = await fetch(url, {
+        method: "PUT",
+        headers: Object.assign({"Content-Type":"application/json"}, githubHeaders(conn)),
+        body: JSON.stringify(makeBody(theSha))
+      });
+    }catch(e){ throw new Error("Could not reach GitHub"); }
+    return res;
+  };
+  let res = await doPut(sha);
+  if(res.status === 409 || res.status === 422){
+    const fresh = await githubReadFile(conn);
+    res = await doPut(fresh.sha);
+  }
+  if(!res.ok) throw new Error("GitHub write failed ("+res.status+")");
+  const json = await res.json();
+  return json.content.sha;
+}
+
+let githubSha = null; // cached sha of the last-known remote file
+let githubPushTimer = null;
+let githubSyncStatus = { syncing:false, lastSyncedAt:null, error:null };
+
+// Rapid local changes (typing, repeated clicks) shouldn't each fire their own
+// commit — coalesce anything within ~2.5s of idle into a single push.
+function scheduleGithubPush(){
+  const conn = getGithubConn();
+  if(!conn) return;
+  clearTimeout(githubPushTimer);
+  githubPushTimer = setTimeout(()=>doGithubPush(conn), 2500);
+}
+async function doGithubPush(conn){
+  githubSyncStatus.syncing = true; renderGithubSyncCard();
+  try{
+    githubSha = await githubWriteFile(conn, STATE, githubSha, "Tracker update "+new Date().toISOString());
+    githubSyncStatus.error = null;
+    githubSyncStatus.lastSyncedAt = Date.now();
+  }catch(e){
+    githubSyncStatus.error = e.message;
+  }
+  githubSyncStatus.syncing = false;
+  renderGithubSyncCard();
+}
+async function doGithubPull(conn){
+  githubSyncStatus.syncing = true; renderGithubSyncCard();
+  try{
+    const { content, sha } = await githubReadFile(conn);
+    githubSha = sha;
+    if(content){
+      STATE = Object.assign(defaultState(), content);
+      (STATE.decks||[]).forEach(normalizePools);
+      (STATE.aspectPresets||[]).forEach(normalizePools);
+      localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+    } else {
+      // Repo has no data file yet — seed it from whatever's on this device now.
+      githubSha = await githubWriteFile(conn, STATE, null, "Initialize tracker data");
+    }
+    githubSyncStatus.error = null;
+    githubSyncStatus.lastSyncedAt = Date.now();
+    renderAllViews();
+  }catch(e){
+    githubSyncStatus.error = e.message;
+  }
+  githubSyncStatus.syncing = false;
+  renderGithubSyncCard();
+}
+
+function renderAllViews(){ renderHome(); renderPhases(); renderMatrix(); renderLog(); }
+
+function renderGithubSyncCard(){
+  const statusEl = document.getElementById("githubSyncStatusText");
+  const btnsEl = document.getElementById("githubSyncButtons");
+  if(!statusEl || !btnsEl) return; // card not in the DOM yet on first paint
+  const conn = getGithubConn();
+  if(!conn){
+    statusEl.textContent = "Not connected — your data is stored in this browser only.";
+    btnsEl.innerHTML = `<button class="btn2" id="githubConnectBtn">Connect to GitHub</button>`;
+    document.getElementById("githubConnectBtn").addEventListener("click",()=>openGithubConnectModal());
+    return;
+  }
+  let status = `Connected to ${escHtml(conn.owner)}/${escHtml(conn.repo)} (${escHtml(conn.path)})`;
+  if(githubSyncStatus.syncing) status += " — syncing…";
+  else if(githubSyncStatus.error) status += " — last sync failed: " + escHtml(githubSyncStatus.error);
+  else if(githubSyncStatus.lastSyncedAt) status += " — last synced " + new Date(githubSyncStatus.lastSyncedAt).toLocaleTimeString();
+  statusEl.innerHTML = status;
+  btnsEl.innerHTML = `
+    <button class="btn2" id="githubEditBtn">Edit connection</button>
+    <button class="btn2" id="githubCopyLinkBtn">Copy one-click setup link for your group</button>
+    <button class="btn2" id="githubRefreshBtn">Refresh from GitHub</button>
+    <button class="btn2" id="githubPushBtn">Push this device's data to GitHub</button>
+    <button class="btn2" id="githubDisconnectBtn" style="color:#e8828a;">Disconnect</button>`;
+  document.getElementById("githubEditBtn").addEventListener("click",()=>openGithubConnectModal(conn));
+  document.getElementById("githubRefreshBtn").addEventListener("click",()=>doGithubPull(conn));
+  document.getElementById("githubPushBtn").addEventListener("click",()=>{
+    showConfirmModal("Push this device's current data to GitHub, replacing what's stored in " + escHtml(conn.owner) + "/" + escHtml(conn.repo) + "? Use this to migrate an existing device's tracked progress — any changes from other devices that haven't synced here yet will be overwritten.", ()=>{
+      doGithubPush(conn);
+    }, {confirmLabel:"Push"});
+  });
+  document.getElementById("githubCopyLinkBtn").addEventListener("click", async ()=>{
+    const link = buildOneClickLink(conn);
+    try{
+      await navigator.clipboard.writeText(link);
+      showAlertModal("Setup link copied. Send it privately (direct message, not a public channel) — it carries your access token, so treat it like a password.");
+    }catch(e){
+      showAlertModal(`Could not copy automatically. Here's the link — copy it yourself and send it privately, it carries your access token:<br><br><span style="word-break:break-all;font-size:11px;">${escHtml(link)}</span>`);
+    }
+  });
+  document.getElementById("githubDisconnectBtn").addEventListener("click",()=>{
+    showConfirmModal("Disconnect from GitHub? Your data stays on this device but will stop syncing.", ()=>{
+      clearGithubConn();
+      githubSha = null;
+      githubSyncStatus = { syncing:false, lastSyncedAt:null, error:null };
+      renderGithubSyncCard();
+    }, {confirmLabel:"Disconnect"});
+  });
+}
+
+function openGithubConnectModal(prefill){
+  const conn = prefill || getGithubConn() || { owner:"", repo:"", path:"data.json", branch:"main", token:"" };
+  const fieldStyle = "width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-size:14px;margin-bottom:12px;";
+  const labelStyle = "font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;";
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <h2 style="margin-top:0;font-size:16px;">Connect to GitHub</h2>
+    <p class="deck-note" style="margin-bottom:12px;">Stores your tracker data as a JSON file in a GitHub repository so any browser or device can pick it up. These details, including the token, are saved only in this browser.</p>
+    <label style="${labelStyle}">Repo owner</label>
+    <input type="text" id="ghOwner" value="${escHtml(conn.owner)}" placeholder="your-github-username" style="${fieldStyle}">
+    <label style="${labelStyle}">Repository name</label>
+    <input type="text" id="ghRepo" value="${escHtml(conn.repo)}" placeholder="mc-tracker-data" style="${fieldStyle}">
+    <label style="${labelStyle}">File path</label>
+    <input type="text" id="ghPath" value="${escHtml(conn.path||'data.json')}" style="${fieldStyle}">
+    <label style="${labelStyle}">Branch</label>
+    <input type="text" id="ghBranch" value="${escHtml(conn.branch||'main')}" style="${fieldStyle}">
+    <label style="${labelStyle}">Personal access token</label>
+    <input type="password" id="ghToken" value="${escHtml(conn.token)}" placeholder="github_pat_…" style="${fieldStyle}">
+    <button class="big-btn" id="ghConnectGo">Connect</button>
+    <button class="btn2" id="ghConnectCancel" style="width:100%;margin-top:8px;">Cancel</button>
+  </div>`;
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) backdrop.remove(); });
+  backdrop.querySelector("#ghConnectCancel").addEventListener("click",()=>backdrop.remove());
+  backdrop.querySelector("#ghConnectGo").addEventListener("click", async ()=>{
+    const newConn = {
+      owner: backdrop.querySelector("#ghOwner").value.trim(),
+      repo: backdrop.querySelector("#ghRepo").value.trim(),
+      path: backdrop.querySelector("#ghPath").value.trim() || "data.json",
+      branch: backdrop.querySelector("#ghBranch").value.trim() || "main",
+      token: backdrop.querySelector("#ghToken").value.trim()
+    };
+    if(!newConn.owner || !newConn.repo || !newConn.token){
+      showAlertModal("Repo owner, repository name, and token are all required.");
+      return;
+    }
+    const goBtn = backdrop.querySelector("#ghConnectGo");
+    goBtn.textContent = "Connecting…"; goBtn.disabled = true;
+    try{
+      const { content, sha } = await githubReadFile(newConn);
+      githubSha = sha;
+      if(content){
+        // Something's already at this path — don't silently pick a side.
+        // Common cases: connecting a second device to data another device
+        // already seeded (want "use GitHub"), or reconnecting a device whose
+        // real data should replace a stale/placeholder remote file (want
+        // "push this device's data").
+        backdrop.remove();
+        showGithubMergeChoiceModal(newConn, content);
+      } else {
+        githubSha = await githubWriteFile(newConn, STATE, null, "Initialize tracker data");
+        saveGithubConn(newConn);
+        localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+        githubSyncStatus = { syncing:false, lastSyncedAt:Date.now(), error:null };
+        backdrop.remove();
+        renderGithubSyncCard();
+        renderAllViews();
+        showAlertModal("Connected — this device's data is now on GitHub.");
+      }
+    }catch(e){
+      goBtn.textContent = "Connect"; goBtn.disabled = false;
+      showAlertModal("Could not connect: " + escHtml(e.message) + ". Double-check the repo owner/name and that the token has Contents: Read and write access to this repository.");
+    }
+  });
+}
+
+// Shown when the target file already has content in it at connect time —
+// migrating an existing device's data (e.g. an iPad with months of tracked
+// progress) onto a repo that already has *something* in it needs an explicit
+// choice rather than silently overwriting one side.
+function showGithubMergeChoiceModal(newConn, remoteContent){
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <h2 style="margin-top:0;font-size:16px;">GitHub already has data here</h2>
+    <p class="deck-note" style="margin-bottom:14px;">${escHtml(newConn.owner)}/${escHtml(newConn.repo)}/${escHtml(newConn.path)} already contains tracker data. Which copy should win?</p>
+    <button class="big-btn" id="ghUseRemote">Use the data from GitHub</button>
+    <p class="muted" style="margin:4px 0 14px;">Replaces what's on this device with what's already on GitHub.</p>
+    <button class="big-btn" id="ghUseLocal">Push this device's data to GitHub</button>
+    <p class="muted" style="margin:4px 0 14px;">Overwrites what's currently on GitHub with what's on this device — use this to migrate an existing device's tracked progress onto a fresh or placeholder repo.</p>
+    <button class="btn2" id="ghMergeCancel" style="width:100%;">Cancel</button>
+  </div>`;
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) backdrop.remove(); });
+  backdrop.querySelector("#ghMergeCancel").addEventListener("click",()=>backdrop.remove());
+  backdrop.querySelector("#ghUseRemote").addEventListener("click",()=>{
+    STATE = Object.assign(defaultState(), remoteContent);
+    (STATE.decks||[]).forEach(normalizePools);
+    (STATE.aspectPresets||[]).forEach(normalizePools);
+    saveGithubConn(newConn);
+    localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+    githubSyncStatus = { syncing:false, lastSyncedAt:Date.now(), error:null };
+    backdrop.remove();
+    renderGithubSyncCard();
+    renderAllViews();
+    showAlertModal("Connected — using the data already on GitHub.");
+  });
+  backdrop.querySelector("#ghUseLocal").addEventListener("click", async ()=>{
+    const btn = backdrop.querySelector("#ghUseLocal");
+    btn.disabled = true; btn.textContent = "Pushing…";
+    try{
+      githubSha = await githubWriteFile(newConn, STATE, githubSha, "Migrate device data to GitHub");
+      saveGithubConn(newConn);
+      githubSyncStatus = { syncing:false, lastSyncedAt:Date.now(), error:null };
+      backdrop.remove();
+      renderGithubSyncCard();
+      showAlertModal("Connected — this device's data has replaced what was on GitHub.");
+    }catch(e){
+      btn.disabled = false; btn.textContent = "Push this device's data to GitHub";
+      showAlertModal("Could not push: " + escHtml(e.message));
+    }
+  });
+}
+
+// One-click setup link: connection details (including the token) live in the
+// URL fragment so they're never sent to a server. Consumed once on load, then
+// immediately stripped from the address bar/history so the token doesn't linger.
+function buildOneClickLink(conn){
+  const payload = encodeURIComponent(b64EncodeUtf8(JSON.stringify(conn)));
+  const url = new URL(location.href);
+  url.hash = "ghconnect=" + payload;
+  return url.toString();
+}
+function consumeOneClickLink(){
+  const m = location.hash.match(/ghconnect=([^&]+)/);
+  if(!m) return;
+  history.replaceState(null, "", location.pathname + location.search);
+  try{
+    const conn = JSON.parse(b64DecodeUtf8(decodeURIComponent(m[1])));
+    openGithubConnectModal(conn);
+  }catch(e){ /* malformed/foreign hash — ignore silently */ }
+}
 
 /* ---- benchmark notes (manual free-text, unrelated to derived W/L/P) ---- */
 function heroBenchNotes(id){
@@ -1267,61 +1794,99 @@ function decksForHero(heroId, includeArchived){
 function cardAvailable(card, poolMode, cutoffPhaseId){
   return poolMode==="full" || card.phaseId<=cutoffPhaseId;
 }
-function cardSelectionIssues(aspect, cards, basics, poolMode, cutoffPhaseId){
+// Checks every relevant bucket in `pools` (the home aspect's own bucket, plus
+// the always-available Basic and Campaign buckets) against its matching
+// ASPECT_POOL. Any other stray keys in `pools` (e.g. left over from a prior
+// aspect that was since switched away from) are intentionally ignored here —
+// they don't count toward this deck/preset, same as before.
+function cardSelectionIssues(aspect, pools, poolMode, cutoffPhaseId){
   const reasons = [];
-  const pool = ASPECT_POOL[aspect] || [];
-  cards.forEach(c=>{
-    const poolCard = pool.find(p=>p.name===c.name);
-    const max = poolCard ? poolCard.qty : 0;
-    if(c.qty > max) reasons.push(`${c.name}: ${c.qty} copies exceeds the ${max}-copy limit for ${aspect}.`);
-    else if(poolCard && !cardAvailable(poolCard, poolMode, cutoffPhaseId)) reasons.push(`${c.name}: not yet available as of Phase ${cutoffPhaseId} (Progression mode).`);
-  });
-  basics.forEach(c=>{
-    const poolCard = BASIC_POOL.find(p=>p.name===c.name);
-    const max = poolCard ? poolCard.qty : 0;
-    if(c.qty > max) reasons.push(`${c.name}: ${c.qty} copies exceeds the ${max}-copy limit for Basic cards.`);
-    else if(poolCard && !cardAvailable(poolCard, poolMode, cutoffPhaseId)) reasons.push(`${c.name}: not yet available as of Phase ${cutoffPhaseId} (Progression mode).`);
+  ["", "Basic", "Campaign"].forEach(bucketKey=>{
+    const poolName = bucketKey || aspect;
+    const list = (pools && pools[poolName]) || [];
+    const pool = ASPECT_POOL[poolName] || [];
+    list.forEach(c=>{
+      const poolCard = pool.find(p=>p.name===c.name);
+      const max = poolCard ? poolCard.qty : 0;
+      if(c.qty > max) reasons.push(`${c.name}: ${c.qty} copies exceeds the ${max}-copy limit for ${poolName}.`);
+      else if(poolCard && !cardAvailable(poolCard, poolMode, cutoffPhaseId)) reasons.push(`${c.name}: not yet available as of Phase ${cutoffPhaseId} (Progression mode).`);
+    });
   });
   return reasons;
 }
 
 function cardTotal(deck){
-  const c1 = deck.cards.reduce((s,c)=>s+c.qty,0);
-  const c2 = deck.basics.reduce((s,c)=>s+c.qty,0);
+  const pools = deck.pools || {};
+  const c1 = (pools[deck.aspect]||[]).reduce((s,c)=>s+c.qty,0);
+  const c2 = (pools.Basic||[]).reduce((s,c)=>s+c.qty,0);
+  const c3 = (pools.Campaign||[]).reduce((s,c)=>s+c.qty,0);
   const heroCards = (DECKS[deck.heroId] && DECKS[deck.heroId].hero) ? DECKS[deck.heroId].hero.reduce((s,[,q])=>s+q,0) : 0;
-  return c1+c2+heroCards;
+  return c1+c2+c3+heroCards;
 }
 
-// MVP legality engine (spec §5.4). We can confidently verify: the hero's
-// required cards are catalogued, exactly one aspect is chosen, and no card
-// exceeds its available copy count. We deliberately do NOT hard-enforce an
-// exact 40-card total: our own sourced precon totals don't cleanly land on
-// 40 either, so treating that as a strict pass/fail would be presenting an
-// unverified rule as fact. Total is shown for reference instead.
+// Legality engine (spec §5.4 + Rules Reference v1.8 §"Deck Building"). We
+// verify: the hero's required cards are catalogued, exactly one aspect is
+// chosen, no card exceeds its available copy count, and — per the real
+// rule — the deck totals between 40 and 50 cards inclusive (identity card
+// not counted, matching how cardTotal() already works). Earlier versions of
+// this app deliberately skipped the 40-50 check because catalogued precon
+// totals didn't always land in range; those source lists have since been
+// corrected, so this is now a hard requirement like MarvelCDB enforces.
+const DECK_MIN_CARDS = 40;
+const DECK_MAX_CARDS = 50;
+// FFG's real deck-building "environments" (Current/Legacy/Limited, per the
+// Rules Reference v1.7-1.8) restrict your card pool by product release
+// recency. This app's own Progression/Full Collection pool-mode toggle is a
+// related but distinct concept — it gates cards by *your own* campaign
+// progress (which phase you've reached), not by the game's actual rotating
+// Current Environment window, which shifts with every FFG rules update
+// independent of any one player's progress. So rather than mislabel
+// Progression mode as "Current" (a claim this app can't actually verify),
+// Full Collection maps to the one FFG environment it does match exactly —
+// Legacy, your whole collection, no restriction — and Progression mode is
+// labeled as its own house rule.
+function deckFormatLabel(poolMode){
+  return poolMode==="full" ? "Legacy" : "Progression (house rule)";
+}
 function validateDeck(deck){
   const reasons = [];
   const heroData = DECKS[deck.heroId];
   if(!heroData || !heroData.hero.length) reasons.push("This hero's required card set isn't catalogued yet.");
   if(!deck.aspect) reasons.push("Choose exactly one aspect.");
-  reasons.push(...cardSelectionIssues(deck.aspect, deck.cards, deck.basics, deck.poolMode, deck.cutoffPhaseId));
+  reasons.push(...cardSelectionIssues(deck.aspect, deck.pools, deck.poolMode, deck.cutoffPhaseId));
   const total = cardTotal(deck);
   if(total===0) reasons.push("Deck is empty — add some cards.");
+  else if(total < DECK_MIN_CARDS) reasons.push(`Deck has ${total} cards — needs at least ${DECK_MIN_CARDS} (identity card doesn't count).`);
+  else if(total > DECK_MAX_CARDS) reasons.push(`Deck has ${total} cards — maximum is ${DECK_MAX_CARDS} (identity card doesn't count).`);
   const legal = reasons.length===0;
-  return { legal, status: legal ? "playable" : "draft", reasons, total };
+  return { legal, status: legal ? "playable" : "draft", reasons, total, format: deckFormatLabel(deck.poolMode) };
+}
+function presetTotal(preset){
+  const pools = preset.pools || {};
+  const c1 = (pools[preset.aspect]||[]).reduce((s,c)=>s+c.qty,0);
+  const c2 = (pools.Basic||[]).reduce((s,c)=>s+c.qty,0);
+  const c3 = (pools.Campaign||[]).reduce((s,c)=>s+c.qty,0);
+  return c1+c2+c3;
 }
 function validatePreset(preset){
   const reasons = [];
   if(!preset.aspect) reasons.push("Choose exactly one aspect.");
-  reasons.push(...cardSelectionIssues(preset.aspect, preset.cards, preset.basics, preset.poolMode, preset.cutoffPhaseId));
-  const total = preset.cards.reduce((s,c)=>s+c.qty,0) + preset.basics.reduce((s,c)=>s+c.qty,0);
+  reasons.push(...cardSelectionIssues(preset.aspect, preset.pools, preset.poolMode, preset.cutoffPhaseId));
+  const total = presetTotal(preset);
   if(total===0) reasons.push("Preset is empty — add some cards.");
   return { legal: reasons.length===0, reasons, total };
 }
 
+function emptyPools(aspect){ return { [aspect]: [], Basic: [], Campaign: [] }; }
+function clonePools(pools){
+  const out = {};
+  Object.entries(pools).forEach(([k,list])=>{ out[k] = list.map(c=>({...c})); });
+  return out;
+}
 function createDeck(heroId, aspect, name){
   const deck = {
     id:newId("d"), name: name || `${HERO_BY_ID[heroId]?.name||heroId} ${aspect} v1`,
-    heroId, aspect, cards:[], basics:[], status:"draft", archived:false,
+    heroId, aspect, pools: emptyPools(aspect), browseTab: aspect, status:"draft", archived:false,
     poolMode:"progression", cutoffPhaseId:computeCurrentPhaseId(),
     sourcePresetId:null, parentDeckId:null,
     createdAt:new Date().toISOString(), modifiedAt:new Date().toISOString()
@@ -1336,7 +1901,7 @@ function duplicateDeckAsNewVersion(oldDeck){
   const deck = {
     id:newId("d"), name:`${baseName} v${nextV}`,
     heroId:oldDeck.heroId, aspect:oldDeck.aspect,
-    cards:oldDeck.cards.map(c=>({...c})), basics:oldDeck.basics.map(c=>({...c})),
+    pools: clonePools(oldDeck.pools), browseTab: oldDeck.aspect,
     status:oldDeck.status, archived:false,
     poolMode:oldDeck.poolMode||"progression", cutoffPhaseId: oldDeck.cutoffPhaseId!=null ? oldDeck.cutoffPhaseId : computeCurrentPhaseId(),
     sourcePresetId:oldDeck.sourcePresetId||null, parentDeckId:oldDeck.id,
@@ -1348,7 +1913,7 @@ function duplicateDeckAsNewVersion(oldDeck){
 function createPreset(aspect, name){
   const preset = {
     id:newId("ap"), name: name || `${aspect} Preset`,
-    aspect, cards:[], basics:[], archived:false,
+    aspect, pools: emptyPools(aspect), browseTab: aspect, archived:false,
     poolMode:"progression", cutoffPhaseId:computeCurrentPhaseId(),
     createdAt:new Date().toISOString(), modifiedAt:new Date().toISOString()
   };
@@ -1359,7 +1924,7 @@ function attachPresetToHero(preset, heroId){
   const deck = {
     id:newId("d"), name:`${HERO_BY_ID[heroId]?.name||heroId} ${preset.aspect} (from ${preset.name})`,
     heroId, aspect:preset.aspect,
-    cards:preset.cards.map(c=>({...c})), basics:preset.basics.map(c=>({...c})),
+    pools: clonePools(preset.pools), browseTab: preset.aspect,
     status:"draft", archived:false,
     poolMode:preset.poolMode||"progression", cutoffPhaseId: preset.cutoffPhaseId!=null ? preset.cutoffPhaseId : computeCurrentPhaseId(),
     sourcePresetId:preset.id, parentDeckId:null,
@@ -1583,17 +2148,29 @@ function wirePhaseBody(item, ph){
 }
 
 /* ============================= MATRIX ============================= */
-let matrixFilters = { hero:"", scenario:"", unlockedOnly:false, benchmarkedOnly:false };
+// Default view is scoped to the phases you've reached — computeCurrentPhaseId()
+// returns your current (first-incomplete) phase, and every phase up through it
+// is something you already own/can play, just maybe not fully benchmarked yet.
+// "Show Full Matrix" is an explicit opt-out to see every hero/scenario ever
+// catalogued, including ones far ahead of where you actually are.
+let matrixFilters = { hero:"", scenario:"", showFull:false };
 document.getElementById("heroFilter").addEventListener("input",e=>{ matrixFilters.hero=e.target.value.toLowerCase(); renderMatrix(); });
 document.getElementById("scenarioFilter").addEventListener("input",e=>{ matrixFilters.scenario=e.target.value.toLowerCase(); renderMatrix(); });
-document.getElementById("unlockedOnly").addEventListener("click",e=>{ matrixFilters.unlockedOnly=!matrixFilters.unlockedOnly; e.target.classList.toggle("on"); renderMatrix(); });
-document.getElementById("benchmarkedOnly").addEventListener("click",e=>{ matrixFilters.benchmarkedOnly=!matrixFilters.benchmarkedOnly; e.target.classList.toggle("on"); renderMatrix(); });
+document.getElementById("matrixScopeToggle").addEventListener("click",e=>{
+  matrixFilters.showFull = !matrixFilters.showFull;
+  e.target.classList.toggle("on", matrixFilters.showFull);
+  e.target.textContent = matrixFilters.showFull ? "Show Unlocked Phases Only" : "Show Full Matrix";
+  renderMatrix();
+});
 
 function renderMatrix(){
   let heroes = HEROES.filter(h=>h.name.toLowerCase().includes(matrixFilters.hero));
   let scenarios = SCENARIOS.filter(s=>s.name.toLowerCase().includes(matrixFilters.scenario));
-  if(matrixFilters.unlockedOnly) scenarios = scenarios.filter(s=>isScenarioUnlocked(s.id));
-  if(matrixFilters.benchmarkedOnly) heroes = heroes.filter(h=>isHeroDone(h.id));
+  if(!matrixFilters.showFull){
+    const currentPhaseId = computeCurrentPhaseId();
+    heroes = heroes.filter(h=>h.phase<=currentPhaseId);
+    scenarios = scenarios.filter(s=>s.phase<=currentPhaseId);
+  }
 
   let html = `<table class="matrix"><thead><tr><th class="corner">Hero \\ Scenario</th>`;
   scenarios.forEach(s=>{ html += `<th title="${s.name}">${s.name}</th>`; });
@@ -1759,6 +2336,11 @@ function renderDeckDetail(heroId){
   if(deck.extra){
     html += `<div class="deck-section"><h4>${deck.extra.label}</h4>${deckListHTML(deck.extra.cards)}</div>`;
   }
+  if(deck.extras){
+    deck.extras.forEach(ex=>{
+      html += `<div class="deck-section"><h4>${ex.label}</h4>${deckListHTML(ex.cards)}</div>`;
+    });
+  }
   if(deck.aspectCards.length){
     html += `<div class="deck-section"><h4>${deck.aspect} Aspect Cards (in this precon)</h4>${deckListHTML(deck.aspectCards)}</div>`;
   } else {
@@ -1856,18 +2438,63 @@ function openHeroPicker(onPick){
   });
 }
 
+// After picking a hero for a new deck, offer a second choice: start blank
+// (pick cards manually in the editor, same as before) or start from an
+// existing Aspect Preset (instantly seeds the aspect + its saved card
+// selections, same as the "Attach to Hero" button on the Aspect Presets tab —
+// this just makes that same capability reachable from the main "+ New Deck"
+// flow too, without a detour through the Presets tab first).
+function openDeckStartPicker(heroId, onDone){
+  const presets = STATE.aspectPresets.filter(p=>!p.archived);
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <h2 style="margin-top:0;font-size:16px;">Start this deck from…</h2>
+    <button class="big-btn" id="startBlankBtn">Blank deck — choose cards manually</button>
+    ${presets.length ? `
+      <p class="deck-note" style="margin:14px 0 6px;">Or start from a saved Aspect Preset:</p>
+      <select id="startPresetSel" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-size:14px;margin-bottom:12px;">
+        ${presets.map(p=>`<option value="${p.id}">${p.name} (${p.aspect})</option>`).join("")}
+      </select>
+      <button class="big-btn" id="startPresetBtn">Use This Preset</button>
+    ` : `<p class="deck-note" style="margin-top:14px;">No Aspect Presets saved yet — create one from the Aspect Presets tab to reuse it here next time.</p>`}
+    <button class="btn2" id="startCancelBtn" style="margin-top:10px;width:100%;">Cancel</button>
+  </div>`;
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) backdrop.remove(); });
+  backdrop.querySelector("#startCancelBtn").addEventListener("click",()=>backdrop.remove());
+  backdrop.querySelector("#startBlankBtn").addEventListener("click",()=>{
+    backdrop.remove();
+    onDone({mode:"blank"});
+  });
+  const presetBtn = backdrop.querySelector("#startPresetBtn");
+  if(presetBtn){
+    presetBtn.addEventListener("click",()=>{
+      const presetId = backdrop.querySelector("#startPresetSel").value;
+      backdrop.remove();
+      onDone({mode:"preset", presetId});
+    });
+  }
+}
 document.getElementById("newDeckBtn").addEventListener("click",()=>{
   if(!DECKBUILDABLE_HEROES.size){ showAlertModal("No heroes have catalogued card data yet."); return; }
   if(!HEROES.some(h=>DECKBUILDABLE_HEROES.has(h.id) && h.phase<=computeCurrentPhaseId())){ showAlertModal("No heroes released yet at your current progression phase have catalogued card data."); return; }
   openHeroPicker(heroId=>{
-    const aspect = (DECKS[heroId] && DECKS[heroId].aspect) || Object.keys(ASPECT_POOL)[0];
-    const deck = createDeck(heroId, aspect);
-    renderMyDecks();
-    openDeckEditor(deck.id);
+    openDeckStartPicker(heroId, (choice)=>{
+      let deck;
+      if(choice.mode==="preset" && getPreset(choice.presetId)){
+        deck = attachPresetToHero(getPreset(choice.presetId), heroId);
+      } else {
+        const aspect = (DECKS[heroId] && DECKS[heroId].aspect) || HOME_ASPECTS[0];
+        deck = createDeck(heroId, aspect);
+      }
+      renderMyDecks();
+      openDeckEditor(deck.id);
+    });
   });
 });
 document.getElementById("newPresetBtn").addEventListener("click",()=>{
-  const preset = createPreset(Object.keys(ASPECT_POOL)[0]);
+  const preset = createPreset(HOME_ASPECTS[0]);
   renderAspectPresets();
   openPresetEditor(preset.id);
 });
@@ -1887,7 +2514,7 @@ function renderMyDecks(){
       <div class="dtop">
         <div>
           <div class="dname">${d.name}</div>
-          <div class="dmeta">${hero?hero.name:d.heroId} · ${d.aspect} · ${v.total} cards${d.parentDeckId?' · new version':''}</div>
+          <div class="dmeta">${hero?hero.name:d.heroId} · ${d.aspect} · ${v.total} cards · ${v.format}${d.parentDeckId?' · new version':''}</div>
         </div>
         <span class="status-pill ${statusLabel}">${statusLabel}</span>
       </div>
@@ -1985,8 +2612,74 @@ function stepperRow(name, max, current, kind){
   }
   return `<div class="card-row">
     <span class="cn">${name}</span>
+    ${cardMetaBadge(name)}
     <div class="qtybtns">${btns}</div>
   </div>`;
+}
+
+/* ---- Deck editor modal ---- */
+function openDeckEditor(deckId){
+  const deck = getDeck(deckId);
+  if(!deck) return;
+  renderDeckEditorModal(deck, isDeckLocked(deck.id));
+}
+// Shared by both the deck and preset editors: renders one pool's rows (type-grouped,
+// with cost/resource badges via CARD_META) for whichever bucket is currently being
+// browsed. `kind` doubles as the pools-object key to write selections into, so the
+// caller doesn't need separate "aspect"/"basic" cases anymore — Basic, Campaign,
+// and the home aspect are all just buckets of the same shape.
+function poolBrowserRows(pool, selectedList, kind, poolMode, cutoffPhaseId, typeFilter){
+  const available = pool.filter(c=>cardAvailable(c, poolMode, cutoffPhaseId));
+  let rows;
+  if(!available.length){
+    rows = `<p class="deck-note">No cards catalogued for ${kind} yet${poolMode==="progression"?" (as of Phase "+cutoffPhaseId+")":""}.</p>`;
+  } else if(typeFilter && typeFilter!=="All"){
+    const code = TYPE_TAB_CODES[typeFilter];
+    const filtered = available.filter(c=>{
+      const m = CARD_META[c.name];
+      return m && m[0]===code;
+    }).sort((a,b)=>a.name.localeCompare(b.name));
+    rows = filtered.length
+      ? filtered.map(c=>stepperRow(c.name, c.qty, qtyOf(selectedList,c.name), kind)).join("")
+      : `<p class="deck-note">No ${typeFilter} cards in ${kind} yet${poolMode==="progression"?" (as of Phase "+cutoffPhaseId+")":""}.</p>`;
+  } else {
+    rows = groupedCardRows(available, selectedList, kind, stepperRow);
+  }
+  // Cards already selected that fell outside the current pool/cutoff (e.g. cutoff lowered after adding) stay visible so they can be removed.
+  const strandedNames = new Set(available.map(c=>c.name));
+  const stranded = selectedList.filter(c=>!strandedNames.has(c.name) && c.qty>0);
+  const strandedHTML = stranded.length ? `<p class="deck-note" style="margin-top:8px;">Not available at the current pool/phase — remove to fix:</p>` +
+    stranded.map(c=>`<div class="card-row"><span class="cn">${c.name} <span class="cmax">(${c.qty}x selected)</span></span><div class="qtybtns"><button data-setqty="0" data-kind="${kind}" data-name="${c.name.replace(/"/g,'&quot;')}" class="remove">Remove</button></div></div>`).join("") : "";
+  return rows + strandedHTML;
+}
+// Shared browse-tab pill row: used for both the pool-selection row (Aggression/
+// Justice/Leadership/Protection/Basic/Campaign/Pool, replacing the old Aspect
+// dropdown) and the type-filter row underneath it (All/Ally/Event/Side Scheme/
+// Resource/Support/Upgrade). attr picks which data-* attribute each button
+// carries so the two rows can have independent click handlers.
+function browseTabsHTML(current, tabs, attr, extraClass){
+  attr = attr || "browsetab";
+  const cls = extraClass ? `browsetabs ${extraClass}` : "browsetabs";
+  return `<div class="${cls}">${tabs.map(t=>`<button type="button" class="deck-subtab${t===current?' active':''}" data-${attr}="${t}">${t}</button>`).join("")}</div>`;
+}
+function typeTabsHTML(current){
+  return browseTabsHTML(current||"All", TYPE_TABS, "typetab", "typetabs");
+}
+// Both editor modals fully re-render their .modal-sheet on every card-quantity
+// click (tapping a stepper number, switching pool/type tabs, etc.) so the row
+// you just tapped stays in the same place in the list. A plain
+// backdrop.innerHTML = ... replaces that scrollable element outright, which
+// resets its scroll position to the top — meaning every single tap while
+// browsing a long pool would kick you back up and force a re-scroll. This
+// captures the outgoing .modal-sheet's scrollTop and reapplies it to the new
+// one, so adding several cards in a row stays put on the part of the list
+// you're working in.
+function setModalHTML(backdrop, html){
+  const prevSheet = backdrop.querySelector(".modal-sheet");
+  const scrollTop = prevSheet ? prevSheet.scrollTop : 0;
+  backdrop.innerHTML = html;
+  const newSheet = backdrop.querySelector(".modal-sheet");
+  if(newSheet) newSheet.scrollTop = scrollTop;
 }
 
 /* ---- Deck editor modal ---- */
@@ -2004,7 +2697,7 @@ function renderDeckEditorModal(deck, locked){
     document.body.appendChild(backdrop);
     backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) closeDeckEditor(); });
   }
-  const aspectOptions = Object.keys(ASPECT_POOL).map(a=>`<option value="${a}" ${a===deck.aspect?'selected':''}>${a}</option>`).join("");
+  normalizePools(deck);
   const heroData = DECKS[deck.heroId];
   const v = validateDeck(deck);
   const currentPhaseId = computeCurrentPhaseId();
@@ -2018,27 +2711,22 @@ function renderDeckEditorModal(deck, locked){
   const heroOptions = HEROES.filter(h=>DECKBUILDABLE_HEROES.has(h.id) && (h.phase<=deck.cutoffPhaseId || h.id===deck.heroId))
     .map(h=>`<option value="${h.id}" ${h.id===deck.heroId?'selected':''}>${h.name}</option>`).join("");
 
-  const heroCardsHTML = heroData ? `<ul class="deck-list">${heroData.hero.map(([n,q])=>`<li><span class="n">${n}</span><span class="q">${q}x</span></li>`).join("")}</ul>` : `<p class="deck-note">Not catalogued.</p>`;
-  const pool = ASPECT_POOL[deck.aspect] || [];
+  const heroCardsHTML = heroData ? `<ul class="deck-list">${heroData.hero.map(([n,q])=>`<li><span class="n">${n} ${cardMetaBadge(n)}</span><span class="q">${q}x</span></li>`).join("")}</ul>` : `<p class="deck-note">Not catalogued.</p>`;
 
-  function browserRows(pool, selectedList, kind){
-    const available = pool.filter(c=>cardAvailable(c, deck.poolMode, deck.cutoffPhaseId));
-    const rows = available.map(c=>stepperRow(c.name, c.qty, qtyOf(selectedList,c.name), kind)).join("") || `<p class="deck-note">No cards catalogued for this ${kind==="aspect"?"aspect":"pool"} yet${deck.poolMode==="progression"?" (as of Phase "+deck.cutoffPhaseId+")":""}.</p>`;
-    // Cards already selected that fell outside the current pool/cutoff (e.g. cutoff lowered after adding) stay visible so they can be removed.
-    const strandedNames = new Set(available.map(c=>c.name));
-    const stranded = selectedList.filter(c=>!strandedNames.has(c.name) && c.qty>0);
-    const strandedHTML = stranded.length ? `<p class="deck-note" style="margin-top:8px;">Not available at the current pool/phase — remove to fix:</p>` +
-      stranded.map(c=>`<div class="card-row"><span class="cn">${c.name} <span class="cmax">(${c.qty}x selected)</span></span><div class="qtybtns"><button data-setqty="0" data-kind="${kind}" data-name="${c.name.replace(/"/g,'&quot;')}" class="remove">Remove</button></div></div>`).join("") : "";
-    return rows + strandedHTML;
-  }
-  const aspectRows = locked
-    ? `<ul class="deck-list">${deck.cards.map(c=>`<li><span class="n">${c.name}</span><span class="q">${c.qty}x</span></li>`).join("") || '<li class="deck-empty">None selected.</li>'}</ul>`
-    : browserRows(pool, deck.cards, "aspect");
-  const basicRows = locked
-    ? `<ul class="deck-list">${deck.basics.map(c=>`<li><span class="n">${c.name}</span><span class="q">${c.qty}x</span></li>`).join("") || '<li class="deck-empty">None selected.</li>'}</ul>`
-    : browserRows(BASIC_POOL, deck.basics, "basic");
+  // Aspect selection now lives in this same tab row (POOL_TABS) instead of a
+  // separate <select> — Aggression/Justice/Leadership/Protection/Pool double
+  // as both "browse this pool" and "set my home aspect"; Basic/Campaign only
+  // change which pool is browsed.
+  if(!POOL_TABS.includes(deck.browseTab)) deck.browseTab = deck.aspect;
+  if(!deck.pools[deck.browseTab]) deck.pools[deck.browseTab] = [];
+  if(deck.typeFilter==null) deck.typeFilter = "All";
+  const activePool = ASPECT_POOL[deck.browseTab] || [];
+  const activeList = deck.pools[deck.browseTab];
+  const poolRows = locked
+    ? `<ul class="deck-list">${activeList.map(c=>`<li><span class="n">${c.name} ${cardMetaBadge(c.name)}</span><span class="q">${c.qty}x</span></li>`).join("") || '<li class="deck-empty">None selected.</li>'}</ul>`
+    : poolBrowserRows(activePool, activeList, deck.browseTab, deck.poolMode, deck.cutoffPhaseId, deck.typeFilter);
 
-  backdrop.innerHTML = `<div class="modal-sheet">
+  setModalHTML(backdrop, `<div class="modal-sheet">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">
       <h2 style="margin:0;font-size:16px;">${locked?'View Deck':'Edit Deck'}</h2>
       <button class="btn2" id="closeDeckEditor">Close</button>
@@ -2046,15 +2734,9 @@ function renderDeckEditorModal(deck, locked){
     ${locked ? `<div class="locked-note">This deck has been used in a logged play, so its card list is locked to keep that play's history reproducible. Use "Duplicate &amp; Edit" from the deck list to change it as a new version.</div>` : ''}
     <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Name</label>
     <input type="text" id="deckNameInput" value="${deck.name.replace(/"/g,'&quot;')}" ${locked?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;margin-bottom:10px;">
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
-      <div style="flex:1 1 160px;">
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Hero</label>
-        <select id="deckHeroSel" ${locked?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;">${heroOptions}</select>
-      </div>
-      <div style="flex:1 1 160px;">
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Aspect</label>
-        <select id="deckAspectSel" ${locked?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;">${aspectOptions}</select>
-      </div>
+    <div style="margin-bottom:6px;">
+      <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Hero</label>
+      <select id="deckHeroSel" ${locked?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;">${heroOptions}</select>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
       <div style="flex:1 1 160px;">
@@ -2069,27 +2751,29 @@ function renderDeckEditorModal(deck, locked){
         <select id="deckCutoffSel" ${locked||deck.poolMode==='full'?'disabled':''} style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;">${phaseOptions}</select>
       </div>
     </div>
-    <p class="deck-note" style="margin-bottom:10px;">In Progression mode, only aspect/basic cards released by the chosen phase are selectable — matching the chronological premise of this whole tracker. Defaults to your current phase; pick an earlier phase to rebuild a hero's historically-accurate deck.</p>
+    <p class="deck-note" style="margin-bottom:10px;">In Progression mode, only cards released by the chosen phase are selectable — matching the chronological premise of this whole tracker. Defaults to your current phase; pick an earlier phase to rebuild a hero's historically-accurate deck.</p>
 
     <div class="legality-box ${v.legal?'legal':'draft'}">
-      <b>${v.legal?'LEGAL':'DRAFT'}</b> · ${v.total} cards
+      <b>${v.legal?'LEGAL':'DRAFT'}</b> · ${v.total} cards · ${v.format} format
       ${v.reasons.length?`<ul>${v.reasons.map(r=>`<li>${r}</li>`).join("")}</ul>`:''}
     </div>
 
+    <div class="deck-editor-section">
+      <h4>Your Deck <span class="muted-count">(${selectedDeckCards(deck.pools, deck.aspect).reduce((s,c)=>s+c.qty,0)} cards)</span></h4>
+      ${selectedDeckCardsHTML(selectedDeckCards(deck.pools, deck.aspect))}
+    </div>
     <div class="deck-editor-section">
       <h4>Required Hero Cards (locked)</h4>
       ${heroCardsHTML}
     </div>
     <div class="deck-editor-section">
-      <h4>${deck.aspect} Aspect Cards</h4>
-      ${aspectRows}
-    </div>
-    <div class="deck-editor-section">
-      <h4>Basic Cards</h4>
-      ${basicRows}
+      <h4>Card Pool</h4>
+      ${browseTabsHTML(deck.browseTab, POOL_TABS)}
+      ${typeTabsHTML(deck.typeFilter)}
+      ${poolRows}
     </div>
     <p class="deck-note" style="margin-top:10px;">Copy limits and required cards are enforced from catalogued precon data. Exact 40-card total enforcement and hero-specific deckbuilding exceptions are deferred until a full card database import.</p>
-  </div>`;
+  </div>`);
 
   document.getElementById("closeDeckEditor").addEventListener("click", closeDeckEditor);
 
@@ -2101,15 +2785,6 @@ function renderDeckEditorModal(deck, locked){
     });
     document.getElementById("deckHeroSel").addEventListener("change",(e)=>{
       deck.heroId = e.target.value;
-      deck.modifiedAt = new Date().toISOString();
-      deck.status = validateDeck(deck).status;
-      saveState();
-      renderDeckEditorModal(deck, locked);
-      renderMyDecks();
-    });
-    document.getElementById("deckAspectSel").addEventListener("change",(e)=>{
-      deck.aspect = e.target.value;
-      deck.cards = [];
       deck.modifiedAt = new Date().toISOString();
       deck.status = validateDeck(deck).status;
       saveState();
@@ -2132,11 +2807,36 @@ function renderDeckEditorModal(deck, locked){
       renderDeckEditorModal(deck, locked);
       renderMyDecks();
     });
+    backdrop.querySelectorAll("[data-browsetab]").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const tab = btn.dataset.browsetab;
+        deck.browseTab = tab;
+        if(!deck.pools[tab]) deck.pools[tab] = [];
+        // Aggression/Justice/Leadership/Protection/Pool double as the deck's
+        // home-aspect choice, same as the old <select> did; Basic/Campaign are
+        // just browsed, they never change deck.aspect.
+        if(HOME_ASPECTS.includes(tab) && tab!==deck.aspect){
+          deck.aspect = tab;
+          deck.modifiedAt = new Date().toISOString();
+          deck.status = validateDeck(deck).status;
+          saveState();
+          renderMyDecks();
+        }
+        renderDeckEditorModal(deck, locked);
+      });
+    });
+    backdrop.querySelectorAll("[data-typetab]").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        deck.typeFilter = btn.dataset.typetab;
+        renderDeckEditorModal(deck, locked);
+      });
+    });
     backdrop.querySelectorAll("[data-setqty]").forEach(btn=>{
       btn.addEventListener("click",()=>{
-        const kind = btn.dataset.kind;
-        const list = kind==="aspect" ? deck.cards : deck.basics;
-        const poolList = kind==="aspect" ? (ASPECT_POOL[deck.aspect]||[]) : BASIC_POOL;
+        const bucket = btn.dataset.kind;
+        if(!deck.pools[bucket]) deck.pools[bucket] = [];
+        const list = deck.pools[bucket];
+        const poolList = ASPECT_POOL[bucket] || [];
         const name = btn.dataset.name;
         const poolCard = poolList.find(p=>p.name===name) || {qty:0};
         const max = poolCard.qty;
@@ -2172,30 +2872,28 @@ function renderPresetEditorModal(preset){
     document.body.appendChild(backdrop);
     backdrop.addEventListener("click",(e)=>{ if(e.target===backdrop) closePresetEditor(); });
   }
-  const aspectOptions = Object.keys(ASPECT_POOL).map(a=>`<option value="${a}" ${a===preset.aspect?'selected':''}>${a}</option>`).join("");
+  normalizePools(preset);
   const v = validatePreset(preset);
   const currentPhaseId = computeCurrentPhaseId();
   if(preset.poolMode==null) preset.poolMode = "progression";
   if(preset.cutoffPhaseId==null) preset.cutoffPhaseId = currentPhaseId;
   const phaseOptions = PHASES.filter(ph=>ph.id<=currentPhaseId)
     .map(ph=>`<option value="${ph.id}" ${ph.id===preset.cutoffPhaseId?'selected':''}>Phase ${ph.id} — ${ph.title}</option>`).join("");
-  const pool = ASPECT_POOL[preset.aspect] || [];
-  function browserRows(pool, selectedList, kind){
-    const available = pool.filter(c=>cardAvailable(c, preset.poolMode, preset.cutoffPhaseId));
-    return available.map(c=>stepperRow(c.name, c.qty, qtyOf(selectedList,c.name), kind)).join("") || `<p class="deck-note">No cards catalogued yet${preset.poolMode==="progression"?" (as of Phase "+preset.cutoffPhaseId+")":""}.</p>`;
-  }
-  const aspectRows = browserRows(pool, preset.cards, "paspect");
-  const basicRows = browserRows(BASIC_POOL, preset.basics, "pbasic");
 
-  backdrop.innerHTML = `<div class="modal-sheet">
+  if(!POOL_TABS.includes(preset.browseTab)) preset.browseTab = preset.aspect;
+  if(!preset.pools[preset.browseTab]) preset.pools[preset.browseTab] = [];
+  if(preset.typeFilter==null) preset.typeFilter = "All";
+  const activePool = ASPECT_POOL[preset.browseTab] || [];
+  const activeList = preset.pools[preset.browseTab];
+  const poolRows = poolBrowserRows(activePool, activeList, preset.browseTab, preset.poolMode, preset.cutoffPhaseId, preset.typeFilter);
+
+  setModalHTML(backdrop, `<div class="modal-sheet">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">
       <h2 style="margin:0;font-size:16px;">Edit Aspect Preset</h2>
       <button class="btn2" id="closePresetEditor">Close</button>
     </div>
     <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Name</label>
     <input type="text" id="presetNameInput" value="${preset.name.replace(/"/g,'&quot;')}" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;margin-bottom:10px;">
-    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Aspect</label>
-    <select id="presetAspectSel" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 8px;font-size:13px;margin-bottom:10px;">${aspectOptions}</select>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
       <div style="flex:1 1 160px;">
         <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;">Card Pool</label>
@@ -2215,23 +2913,23 @@ function renderPresetEditorModal(preset){
       ${v.reasons.length?`<ul>${v.reasons.map(r=>`<li>${r}</li>`).join("")}</ul>`:''}
     </div>
 
-    <div class="deck-editor-section"><h4>${preset.aspect} Aspect Cards</h4>${aspectRows}</div>
-    <div class="deck-editor-section"><h4>Basic Cards</h4>${basicRows}</div>
-  </div>`;
+    <div class="deck-editor-section">
+      <h4>Your Deck <span class="muted-count">(${selectedDeckCards(preset.pools, preset.aspect).reduce((s,c)=>s+c.qty,0)} cards)</span></h4>
+      ${selectedDeckCardsHTML(selectedDeckCards(preset.pools, preset.aspect))}
+    </div>
+    <div class="deck-editor-section">
+      <h4>Card Pool</h4>
+      ${browseTabsHTML(preset.browseTab, POOL_TABS)}
+      ${typeTabsHTML(preset.typeFilter)}
+      ${poolRows}
+    </div>
+  </div>`);
 
   document.getElementById("closePresetEditor").addEventListener("click", closePresetEditor);
   document.getElementById("presetNameInput").addEventListener("change",(e)=>{
     preset.name = e.target.value.trim() || preset.name;
     preset.modifiedAt = new Date().toISOString();
     saveState();
-  });
-  document.getElementById("presetAspectSel").addEventListener("change",(e)=>{
-    preset.aspect = e.target.value;
-    preset.cards = [];
-    preset.modifiedAt = new Date().toISOString();
-    saveState();
-    renderPresetEditorModal(preset);
-    renderAspectPresets();
   });
   document.getElementById("presetPoolModeSel").addEventListener("change",(e)=>{
     preset.poolMode = e.target.value;
@@ -2247,11 +2945,32 @@ function renderPresetEditorModal(preset){
     renderPresetEditorModal(preset);
     renderAspectPresets();
   });
+  backdrop.querySelectorAll("[data-browsetab]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const tab = btn.dataset.browsetab;
+      preset.browseTab = tab;
+      if(!preset.pools[tab]) preset.pools[tab] = [];
+      if(HOME_ASPECTS.includes(tab) && tab!==preset.aspect){
+        preset.aspect = tab;
+        preset.modifiedAt = new Date().toISOString();
+        saveState();
+        renderAspectPresets();
+      }
+      renderPresetEditorModal(preset);
+    });
+  });
+  backdrop.querySelectorAll("[data-typetab]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      preset.typeFilter = btn.dataset.typetab;
+      renderPresetEditorModal(preset);
+    });
+  });
   backdrop.querySelectorAll("[data-setqty]").forEach(btn=>{
     btn.addEventListener("click",()=>{
-      const kind = btn.dataset.kind;
-      const list = kind==="paspect" ? preset.cards : preset.basics;
-      const poolList = kind==="paspect" ? (ASPECT_POOL[preset.aspect]||[]) : BASIC_POOL;
+      const bucket = btn.dataset.kind;
+      if(!preset.pools[bucket]) preset.pools[bucket] = [];
+      const list = preset.pools[bucket];
+      const poolList = ASPECT_POOL[bucket] || [];
       const name = btn.dataset.name;
       const max = (poolList.find(p=>p.name===name)||{qty:0}).qty;
       const next = Math.max(0, Math.min(max, parseInt(btn.dataset.setqty,10)));
@@ -2386,13 +3105,17 @@ document.getElementById("importFile").addEventListener("change",e=>{
       STATE = (parsed && Array.isArray(parsed.plays)) ? Object.assign(defaultState(), parsed) : buildV2FromV1(parsed);
       saveState();
       renderHome(); renderPhases(); renderMatrix(); renderLog();
-      showAlertModal("Backup imported.");
+      showAlertModal(getGithubConn() ? "Backup imported — syncing to GitHub." : "Backup imported.");
     }catch(err){ showAlertModal("Could not read that file."); }
   };
   reader.readAsText(file);
 });
 document.getElementById("resetBtn").addEventListener("click",()=>{
-  showConfirmModal("This will erase all tracked progress on this device. Continue?", ()=>{
+  const conn = getGithubConn();
+  const warning = conn
+    ? `This will erase all tracked progress on this device — and since GitHub Sync is connected to ${escHtml(conn.owner)}/${escHtml(conn.repo)}, it will also push that empty state and erase it there for anyone else using this connection. Continue?`
+    : "This will erase all tracked progress on this device. Continue?";
+  showConfirmModal(warning, ()=>{
     STATE = defaultState();
     saveState();
     renderHome(); renderPhases(); renderMatrix(); renderLog();
@@ -2402,6 +3125,15 @@ document.getElementById("resetBtn").addEventListener("click",()=>{
 /* ============================= INIT ============================= */
 renderHome();
 renderPhases();
+renderGithubSyncCard();
+consumeOneClickLink();
+// If already connected, pull the latest remote copy in the background — the
+// page has already rendered from localStorage above so there's no blank
+// flash, this just quietly catches it up if another device pushed since.
+(function(){
+  const conn = getGithubConn();
+  if(conn) doGithubPull(conn);
+})();
 </script>
 </body>
 </html>
