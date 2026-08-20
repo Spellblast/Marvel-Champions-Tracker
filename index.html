@@ -91,6 +91,29 @@ main{padding:12px;max-width:1200px;margin:0 auto;padding-bottom:60px;}
 .sandbox-order input{width:44px;background:#00000040;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px;text-align:center;}
 .campaign-complete-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px;}
 .campaign-complete-row input{width:18px;height:18px;}
+.campaign-box .cprogress{color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0;margin-left:6px;font-size:11px;}
+.campaign-loadout{background:#00000030;border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:10px;}
+.campaign-loadout-row{display:flex;gap:6px;margin-bottom:6px;}
+.campaign-loadout-row:last-child{margin-bottom:0;}
+.campaign-loadout select{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px;font-size:11.5px;min-width:0;}
+.order-list .stage-mark,.order-list .stage-unmark{margin-left:auto;flex:0 0 auto;padding:2px 9px;font-size:10.5px;}
+.order-list li{flex-wrap:wrap;}
+.status-pill{display:inline-block;background:var(--panel2);color:var(--muted);font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:6px;white-space:nowrap;}
+.status-pill.won{background:var(--green);color:#fff;}
+.status-pill.played{background:var(--amber);color:#101010;}
+.campaign-log{margin-top:12px;border-top:1px solid var(--border);padding-top:10px;}
+.campaign-log h5{margin:0 0 8px;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+.campaign-log-add{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.campaign-log-add .cl-date{flex:0 0 auto;width:130px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px;font-size:11.5px;}
+.campaign-log-add .cl-text{flex:1 1 160px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px;font-size:11.5px;}
+.campaign-log-add .cl-add{flex:0 0 auto;padding:6px 12px;font-size:11.5px;}
+.campaign-log-entries{list-style:none;margin:0;padding:0;font-size:12px;}
+.campaign-log-entries li{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);}
+.campaign-log-entries li:last-child{border-bottom:none;}
+.cl-entry-date{color:var(--muted);font-size:10.5px;flex:0 0 auto;}
+.cl-entry-text{flex:1;color:var(--text);}
+.campaign-badge{display:inline-block;background:var(--panel2);color:var(--muted);font-size:9.5px;font-weight:800;padding:1px 6px;border-radius:8px;vertical-align:middle;text-transform:none;letter-spacing:0;}
+.campaign-badge.complete{background:var(--green);color:#fff;}
 
 /* Matrix */
 .matrix-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center;}
@@ -225,6 +248,7 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
   <button data-view="phases">Phases</button>
   <button data-view="matrix">Matrix</button>
   <button data-view="log">Log Play</button>
+  <button data-view="logcampaign">Log Campaign</button>
   <button data-view="decks">Decks</button>
   <button data-view="guide">Guide</button>
 </nav>
@@ -241,9 +265,11 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
         <div class="stat"><div class="num" id="statScenariosDone">0/60</div><div class="lbl">Scenarios Unlocked</div></div>
         <div class="stat"><div class="num" id="statMatrixDone">0/3900</div><div class="lbl">Matrix Cells Filled</div></div>
         <div class="stat"><div class="num" id="statCurrentPhase">0</div><div class="lbl">Current Phase</div></div>
+        <div class="stat"><div class="num" id="statPlaysLogged">0</div><div class="lbl">Plays Logged</div></div>
+        <div class="stat"><div class="num" id="statCampaignsLogged">0/9</div><div class="lbl">Campaigns Logged</div></div>
       </div>
       <div class="progress-bar"><div id="progHeroes" style="width:0%"></div></div>
-      <p class="muted" style="margin-top:6px;">Heroes benchmarked (all 3 steps complete)</p>
+      <p class="muted" style="margin-top:6px;">Heroes benchmarked (precon Klaw win + custom Klaw win, any Standard/Expert tier)</p>
       <div class="progress-bar"><div id="progMatrix" style="width:0%"></div></div>
       <p class="muted" style="margin-top:6px;">Full Hero x Scenario matrix filled</p>
       <button class="big-btn" data-goto="log">+ Log a Play</button>
@@ -279,7 +305,7 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
   <!-- PHASES -->
   <section id="view-phases" class="view">
     <div class="card" style="margin-bottom:10px;">
-      <p class="muted">Tap a phase to open it. Tap a hero's step to mark it complete. Tap a scenario chip to mark it unlocked/played.</p>
+      <p class="muted">Tap a phase to open it. A hero's steps are derived from Log Play — log a matching Klaw win to complete one. Tap a scenario chip to mark it unlocked/played.</p>
     </div>
     <div id="phaseList"></div>
   </section>
@@ -307,7 +333,7 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
   <!-- LOG -->
   <section id="view-log" class="view">
     <div class="card">
-      <h2>Log a Play</h2>
+      <h2 id="logFormHeading">Log a Play</h2>
       <div class="form-grid">
         <div>
           <label>Date</label>
@@ -362,8 +388,11 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
           <textarea id="logNotes" rows="2" placeholder="Key cards, what worked, what didn't…"></textarea>
         </div>
       </div>
-      <p class="muted" style="margin-bottom:10px;">Every saved entry counts as one attempt and automatically updates the matrix and Klaw benchmark steps — there's no separate apply step.</p>
-      <button class="big-btn" id="saveLogBtn">Save Entry</button>
+      <p class="muted" style="margin-bottom:10px;" id="logFormHint">Every saved entry counts as one attempt and automatically updates the matrix and Klaw benchmark steps — there's no separate apply step.</p>
+      <div style="display:flex;gap:10px;">
+        <button class="big-btn" id="saveLogBtn" style="flex:1;">Save Entry</button>
+        <button class="btn2" id="cancelEditLogBtn" style="display:none;">Cancel edit</button>
+      </div>
     </div>
 
     <div class="card">
@@ -371,6 +400,18 @@ footer.foot{text-align:center;padding:20px 12px 40px;color:var(--muted);font-siz
       <input type="text" id="logSearch" placeholder="Search log…" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:10px;">
       <div id="logList"></div>
     </div>
+  </section>
+
+  <!-- LOG CAMPAIGN -->
+  <section id="view-logcampaign" class="view">
+    <div class="card">
+      <h2>Log Campaign Progress</h2>
+      <p class="muted" style="margin-bottom:10px;">Pick a campaign you've reached, then start (or continue) a playthrough — the same campaign box can be played more than once, each run tracked separately.</p>
+      <label>Campaign</label>
+      <select id="lcCampaignSel"></select>
+      <div id="lcPlaythroughPicker" style="margin-top:12px;"></div>
+    </div>
+    <div id="lcActiveWrap"></div>
   </section>
 
   <!-- DECKS -->
@@ -1284,9 +1325,11 @@ function defaultState(){
     // Object.assign(defaultState(), parsed) only overrides keys parsed actually has,
     // so if this were set to true by default it would silently mask the one-time
     // migration below for every already-saved state that predates this field.
-    campaignComplete: {}, // phaseId -> bool
-    fneOrder: {}, // scenarioId -> order number (1-5) for Fear No Evil sandbox
-    fneHero: "", // chosen campaign hero id
+    campaignComplete: {}, // phaseId -> bool (still the single flag that gates phase progression, independent of any one playthrough)
+    campaignLogs: {}, // legacy (single-log-per-campaign) shape, superseded by campaignPlaythroughs below — kept only as a migration source, see loadState()
+    campaignPlaythroughs: {}, // phaseId -> [{id,label,heroId,deckType,deckId,difficulty,sandboxOrder,stagePlays,entries,complete,createdAt}] — supports multiple independent runs of the same campaign box
+    fneOrder: {}, // legacy Fear No Evil sandbox order, superseded by each playthrough's own sandboxOrder — kept only as a migration source
+    fneHero: "", // legacy Fear No Evil campaign hero, superseded by each playthrough's own heroId — kept only as a migration source
     decks: [], // reserved for the v2 deckbuilder (Phase 2)
     aspectPresets: [], // reserved for the v2 deckbuilder (Phase 2)
     plays: [], // {id,date,heroId,scenarioId,difficulty,heroicLevel,deckType,deckId,isLegacyCustom,result,notes,ts} — one record per attempt
@@ -1406,6 +1449,42 @@ function loadState(){
         if(state.scenarioUnlocked[id] === undefined) state.scenarioUnlocked[id] = true;
       });
       state._coreSetSeeded = true;
+      try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+    }
+    // One-time, additive migration: campaign logging used to be a single
+    // object per campaign (campaignLogs[phaseId]) before it supported
+    // multiple independent playthroughs. If a device already has real data
+    // there and hasn't been migrated yet, fold it into one seeded
+    // playthrough rather than silently dropping it. Fear No Evil's old
+    // fneHero/fneOrder fields are folded in the same way. Safe to run more
+    // than once — it only ever acts on phases that don't already have a
+    // playthrough array, so it can't clobber anything created since.
+    if(!state._campaignPlaythroughsMigrated){
+      Object.entries(state.campaignLogs||{}).forEach(([phaseId, log])=>{
+        if(!log) return;
+        const hasContent = (log.entries&&log.entries.length) || (log.stagePlays&&Object.keys(log.stagePlays).length) || log.heroId;
+        if(!hasContent) return;
+        if(state.campaignPlaythroughs[phaseId] && state.campaignPlaythroughs[phaseId].length) return;
+        state.campaignPlaythroughs[phaseId] = [{
+          id: "ct"+Date.now()+Math.random().toString(36).slice(2,6),
+          label: "Playthrough 1",
+          heroId: log.heroId || "", deckType: log.deckType || "precon", deckId: log.deckId || null,
+          difficulty: log.difficulty || "Standard I", sandboxOrder: {},
+          stagePlays: log.stagePlays || {}, entries: log.entries || [],
+          complete: !!state.campaignComplete[phaseId], createdAt: Date.now()
+        }];
+      });
+      if((state.fneHero || Object.keys(state.fneOrder||{}).length) && !(state.campaignPlaythroughs[25] && state.campaignPlaythroughs[25].length)){
+        state.campaignPlaythroughs[25] = [{
+          id: "ct"+Date.now()+Math.random().toString(36).slice(2,6),
+          label: "Playthrough 1",
+          heroId: state.fneHero || "", deckType: "precon", deckId: null,
+          difficulty: "Standard I", sandboxOrder: Object.assign({}, state.fneOrder),
+          stagePlays: {}, entries: [],
+          complete: !!state.campaignComplete[25], createdAt: Date.now()
+        }];
+      }
+      state._campaignPlaythroughsMigrated = true;
       try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
     }
     return state;
@@ -1761,15 +1840,80 @@ function diffShortLabel(p){
   return map[d] || d;
 }
 
-/* ---- derived benchmarks (Klaw steps) — spec: no cross-implication ---- */
-function computeHeroBenchmarks(heroId){
-  const wins = STATE.plays.filter(p=>p.heroId===heroId && p.scenarioId==="klaw" && p.result==="W");
-  const preconStd = wins.some(p=>normDifficulty(p.difficulty)==="Standard I" && p.deckType==="precon");
-  const preconExp = wins.some(p=>normDifficulty(p.difficulty)==="Expert I" && p.deckType==="precon");
-  const customExp = wins.some(p=>normDifficulty(p.difficulty)==="Expert I" && p.deckType==="custom");
-  return { preconStd, preconExp, customExp };
+/* ---- derived benchmarks (Klaw steps) ----
+   A hero counts as benchmarked once you have a Klaw win with the precon at
+   any Standard or Expert tier, AND a separate Klaw win with a custom deck at
+   any Standard or Expert tier — the specific tier doesn't matter for either
+   one, and Heroic wins don't count toward this (Heroic is a different scale). */
+function isStdOrExpert(difficulty){
+  const d = normDifficulty(difficulty);
+  return d==="Standard I" || d==="Standard II" || d==="Standard III" || d==="Expert I" || d==="Expert II";
 }
-function isHeroDone(id){ const b=computeHeroBenchmarks(id); return b.preconStd && b.preconExp && b.customExp; }
+function computeHeroBenchmarks(heroId){
+  const wins = STATE.plays.filter(p=>p.heroId===heroId && p.scenarioId==="klaw" && p.result==="W" && isStdOrExpert(p.difficulty));
+  const precon = wins.some(p=>p.deckType==="precon");
+  const custom = wins.some(p=>p.deckType==="custom");
+  return { precon, custom };
+}
+function isHeroDone(id){ const b=computeHeroBenchmarks(id); return b.precon && b.custom; }
+
+/* ---- campaign playthroughs ----
+   MarvelCDB's public API only serves card/pack/deck data — there's no
+   structured source (there, or anywhere public) for the numbered entries in
+   each campaign box's physical Campaign Log booklet, since that's rulebook
+   narrative text. So this doesn't try to reproduce those booklets; instead
+   it derives what it *can* know (which campaign scenarios have actually been
+   won, from logged plays) and gives a free-form, timestamped log for
+   everything else. A campaign box can have any number of independent
+   playthroughs (different heroes/difficulties/decks), each tracked
+   separately — logging happens on its own tab (Log Campaign); the Phases
+   tab only shows a read-only summary. */
+function getCampaignPlaythroughs(phaseId){
+  if(!STATE.campaignPlaythroughs[phaseId]) STATE.campaignPlaythroughs[phaseId] = [];
+  return STATE.campaignPlaythroughs[phaseId];
+}
+function createCampaignPlaythrough(phaseId){
+  const list = getCampaignPlaythroughs(phaseId);
+  const pt = {
+    id: "ct"+Date.now()+Math.random().toString(36).slice(2,6),
+    label: "Playthrough "+(list.length+1),
+    heroId: "", deckType: "precon", deckId: null, difficulty: "Standard I",
+    sandboxOrder: {}, stagePlays: {}, entries: [], complete: false, createdAt: Date.now()
+  };
+  list.push(pt);
+  return pt;
+}
+function getPlaythrough(phaseId, ptId){
+  return getCampaignPlaythroughs(phaseId).find(p=>p.id===ptId) || null;
+}
+// Removes a playthrough and only the plays it itself created (never a play
+// logged elsewhere, even against the same scenario) — same "only clean up
+// what we made" rule the old single-log Unmark button used.
+function deleteCampaignPlaythrough(phaseId, ptId){
+  const pt = getPlaythrough(phaseId, ptId);
+  if(!pt) return;
+  const playIds = new Set(Object.values(pt.stagePlays));
+  STATE.plays = STATE.plays.filter(p=>!playIds.has(p.id));
+  STATE.campaignPlaythroughs[phaseId] = getCampaignPlaythroughs(phaseId).filter(p=>p.id!==ptId);
+}
+// Every scenario ever logged as won counts here regardless of difficulty —
+// a campaign scenario is either resolved or it isn't, unlike hero benchmarks.
+function scenarioPlayStatus(scenarioId){
+  const plays = STATE.plays.filter(p=>p.scenarioId===scenarioId).slice().sort((a,b)=>b.ts-a.ts);
+  if(!plays.length) return { played:false, won:false, lastResult:null, lastDate:null };
+  return { played:true, won: plays.some(p=>p.result==="W"), lastResult: plays[0].result, lastDate: plays[0].date };
+}
+function campaignScenarioIds(campaign){
+  if(campaign.order) return campaign.order.slice();
+  if(campaign.sandbox) return campaign.sandbox.concat(campaign.final ? [campaign.final] : []);
+  return [];
+}
+function campaignProgress(ph){
+  if(!ph.campaign) return null;
+  const ids = campaignScenarioIds(ph.campaign);
+  const wonCount = ids.filter(sid=>scenarioPlayStatus(sid).won).length;
+  return { wonCount, total: ids.length, complete: !!STATE.campaignComplete[ph.id] };
+}
 function isScenarioUnlocked(id){ return !!STATE.scenarioUnlocked[id]; }
 function matrixKey(h,s){ return h+"|"+s; }
 // Shared label for a play's deck, used in Log History and the matchup detail view.
@@ -1954,6 +2098,39 @@ function attachPresetToHero(preset, heroId){
   STATE.decks.push(deck); saveState();
   return deck;
 }
+// Copies another saved deck's aspect/Basic/Campaign card choices onto a
+// (possibly different) hero — the hero's own signature cards aren't part of
+// `pools` so they aren't copied, only the buildable choices are, same as
+// attachPresetToHero above but sourced from a deck instead of a preset.
+function copyDeckToHero(sourceDeck, heroId){
+  const deck = {
+    id:newId("d"), name:`${HERO_BY_ID[heroId]?.name||heroId} ${sourceDeck.aspect} (copy of ${sourceDeck.name})`,
+    heroId, aspect:sourceDeck.aspect,
+    pools: clonePools(sourceDeck.pools), browseTab: sourceDeck.aspect,
+    status:"draft", archived:false,
+    poolMode:sourceDeck.poolMode||"progression", cutoffPhaseId: sourceDeck.cutoffPhaseId!=null ? sourceDeck.cutoffPhaseId : computeCurrentPhaseId(),
+    sourcePresetId:sourceDeck.sourcePresetId||null, parentDeckId:null,
+    createdAt:new Date().toISOString(), modifiedAt:new Date().toISOString()
+  };
+  STATE.decks.push(deck); saveState();
+  return deck;
+}
+// Quick same-hero duplicate, available on any deck (draft or locked) — an
+// independent copy you're free to edit right away, unlike "Duplicate & Edit"
+// (locked decks only), which is specifically for versioning the same build.
+function copyDeckSameHero(oldDeck){
+  const deck = {
+    id:newId("d"), name: oldDeck.name + " (Copy)",
+    heroId: oldDeck.heroId, aspect: oldDeck.aspect,
+    pools: clonePools(oldDeck.pools), browseTab: oldDeck.aspect,
+    status:"draft", archived:false,
+    poolMode: oldDeck.poolMode||"progression", cutoffPhaseId: oldDeck.cutoffPhaseId!=null ? oldDeck.cutoffPhaseId : computeCurrentPhaseId(),
+    sourcePresetId: oldDeck.sourcePresetId||null, parentDeckId:null,
+    createdAt:new Date().toISOString(), modifiedAt:new Date().toISOString()
+  };
+  STATE.decks.push(deck); saveState();
+  return deck;
+}
 
 /* ============================= NAV ============================= */
 document.querySelectorAll("nav.tabs button").forEach(btn=>{
@@ -1967,6 +2144,7 @@ function showView(name){
   document.querySelectorAll("main .view").forEach(v=>v.classList.toggle("active", v.id==="view-"+name));
   if(name==="matrix") renderMatrix();
   if(name==="log") renderLog();
+  if(name==="logcampaign") renderLogCampaign();
   if(name==="home") renderHome();
   if(name==="phases") renderPhases();
   if(name==="decks"){
@@ -1999,6 +2177,18 @@ function renderHome(){
   document.getElementById("progMatrix").style.width = (filledCells/totalCells*100)+"%";
   document.getElementById("currentPhaseSummary").textContent = "Phase "+current.id+" — "+current.title+" ("+current.date+")";
   document.getElementById("jumpCurrentPhase").onclick = ()=>{ showView("phases"); setTimeout(()=>openPhase(current.id),50); };
+
+  const allCampaignPhases = PHASES.filter(ph=>ph.campaign);
+  const loggedCampaigns = allCampaignPhases.filter(isCampaignLogged).length;
+  document.getElementById("statPlaysLogged").textContent = STATE.plays.length;
+  document.getElementById("statCampaignsLogged").textContent = loggedCampaigns+"/"+allCampaignPhases.length;
+}
+// A campaign counts as "logged" once there's any real activity against it —
+// a stage won, a free-form log entry, or the complete checkbox — not just
+// because its phase has been reached.
+function isCampaignLogged(ph){
+  const prog = campaignProgress(ph);
+  return prog.wonCount>0 || prog.complete || getCampaignPlaythroughs(ph.id).length>0;
 }
 
 function renderMigrationCard(){
@@ -2045,7 +2235,7 @@ function renderPhases(){
     const scenOk = ph.scenarios.every(([id])=>isScenarioUnlocked(id));
     const campOk = ph.campaign ? !!STATE.campaignComplete[ph.id] : true;
     const allDone = heroesOk && scenOk && campOk && (ph.heroes.length+ph.scenarios.length>0 || ph.campaign);
-    const anyProgress = ph.heroes.some(([id])=>{const b=STATE.heroBenchmarks[id];return b&&(b.preconStd||b.preconExp||b.customExp);}) ||
+    const anyProgress = ph.heroes.some(([id])=>{const b=computeHeroBenchmarks(id);return b.precon||b.custom;}) ||
                          ph.scenarios.some(([id])=>isScenarioUnlocked(id));
 
     const item = document.createElement("div");
@@ -2054,7 +2244,7 @@ function renderPhases(){
       <div class="phase-head" data-ph="${ph.id}">
         <div class="phase-num ${allDone?'done':(anyProgress?'partial':'')}">${ph.id}</div>
         <div class="phase-headtext">
-          <div class="t">${ph.title}</div>
+          <div class="t">${ph.title}${ph.campaign ? ` <span class="campaign-badge ${STATE.campaignComplete[ph.id]?'complete':''}">${STATE.campaignComplete[ph.id] ? "Campaign ✓" : `Campaign ${campaignProgress(ph).wonCount}/${campaignProgress(ph).total}`}</span>` : ""}</div>
           <div class="d">${ph.date}</div>
         </div>
         <div class="chev">▶</div>
@@ -2077,6 +2267,82 @@ function renderPhases(){
 }
 function openPhase(id){ openPhaseId=id; renderPhases(); }
 
+function scenarioStatusPillHTML(sid){
+  const st = scenarioPlayStatus(sid);
+  if(st.won) return `<span class="status-pill won">✓ Won${st.lastDate?" "+st.lastDate:""}</span>`;
+  if(st.played) return `<span class="status-pill played">Played, not won</span>`;
+  return `<span class="status-pill">Not yet played</span>`;
+}
+// The hero/deck/difficulty for one specific playthrough — used every time
+// you tap "Mark Complete" on a stage below so you don't have to re-pick it
+// for each scenario. Different playthroughs of the same campaign box each
+// keep their own independent loadout.
+function buildCampaignLoadoutHTML(ph, pt){
+  const heroOptions = HEROES.filter(h=>DECKBUILDABLE_HEROES.has(h.id) && h.phase<=ph.id)
+    .map(h=>`<option value="${h.id}" ${pt.heroId===h.id?'selected':''}>${h.name}</option>`).join("");
+  const savedDecks = pt.heroId ? decksForHero(pt.heroId, false) : [];
+  const savedDeckOptions = savedDecks.map(d=>`<option value="${d.id}" ${pt.deckId===d.id?'selected':''}>${d.name}${isDeckLocked(d.id)?' (locked)':''}</option>`).join("");
+  return `<div class="campaign-loadout">
+    <p class="muted" style="margin:0 0 6px;font-size:10.5px;">Hero and deck for this playthrough — used when you mark a stage complete below.</p>
+    <div class="campaign-loadout-row">
+      <select class="camp-hero" data-ph="${ph.id}" data-pt="${pt.id}"><option value="">— choose hero —</option>${heroOptions}</select>
+      <select class="camp-difficulty" data-ph="${ph.id}" data-pt="${pt.id}">
+        ${["Standard I","Standard II","Standard III","Expert I","Expert II","Heroic"].map(d=>`<option value="${d}" ${pt.difficulty===d?'selected':''}>${d}</option>`).join("")}
+      </select>
+    </div>
+    <div class="campaign-loadout-row">
+      <select class="camp-decktype" data-ph="${ph.id}" data-pt="${pt.id}">
+        <option value="precon" ${pt.deckType==="precon"?'selected':''}>Precon</option>
+        <option value="custom" ${pt.deckType==="custom"?'selected':''}>Custom</option>
+      </select>
+      <select class="camp-saveddeck" data-ph="${ph.id}" data-pt="${pt.id}" style="${pt.deckType==='custom'?'':'display:none;'}">
+        <option value="">Custom (unsaved / not tracked as a deck)</option>
+        ${savedDeckOptions}
+      </select>
+    </div>
+  </div>`;
+}
+// One campaign stage's row: name, derived status pill, and a Mark
+// Complete/Unmark control scoped to a single playthrough. Marking creates a
+// real play record (so it also feeds the matrix, scenario-unlock, and
+// benchmarks); unmarking only removes the specific play this playthrough's
+// control created, never a play logged elsewhere or by another playthrough.
+function campaignStageRowHTML(ph, pt, sid, extraHTML){
+  const label = SCEN_BY_ID[sid].name;
+  const trackedId = pt.stagePlays[sid];
+  const tracked = trackedId && STATE.plays.some(p=>p.id===trackedId);
+  let action = "";
+  if(tracked){
+    action = ` <button class="btn2 stage-unmark" data-ph="${ph.id}" data-pt="${pt.id}" data-sid="${sid}">Unmark</button>`;
+  } else if(!scenarioPlayStatus(sid).won){
+    action = ` <button class="btn2 stage-mark" data-ph="${ph.id}" data-pt="${pt.id}" data-sid="${sid}">Mark Complete</button>`;
+  }
+  return `<li>${label} ${scenarioStatusPillHTML(sid)}${extraHTML||""}${action}</li>`;
+}
+// Free-form campaign log: a running, timestamped list the user writes
+// themselves (what they checked off in the physical booklet, resources
+// carried forward, etc.) since no public source has that narrative content.
+// Scoped to one playthrough, since different runs carry forward different things.
+function buildCampaignLogHTML(ph, pt){
+  let html = `<div class="campaign-log">
+    <h5>Campaign Log</h5>
+    <div class="campaign-log-add">
+      <input type="date" class="cl-date" data-ph="${ph.id}" data-pt="${pt.id}">
+      <input type="text" class="cl-text" data-ph="${ph.id}" data-pt="${pt.id}" placeholder="What happened / what you checked off…">
+      <button class="btn2 cl-add" data-ph="${ph.id}" data-pt="${pt.id}">Add</button>
+    </div>`;
+  if(!pt.entries.length){
+    html += `<p class="muted" style="margin:8px 0 0;font-size:11px;">No entries yet — jot down key beats as you play through the campaign (boxes checked, rewards kept, penalties carried forward…).</p>`;
+  } else {
+    html += `<ul class="campaign-log-entries">`;
+    pt.entries.slice().sort((a,b)=>b.ts-a.ts).forEach(en=>{
+      html += `<li><span class="cl-entry-date">${en.date||""}</span><span class="cl-entry-text">${escHtml(en.text)}</span><button class="del cl-del" data-ph="${ph.id}" data-pt="${pt.id}" data-entry="${en.id}">✕</button></li>`;
+    });
+    html += `</ul>`;
+  }
+  html += `</div>`;
+  return html;
+}
 function buildPhaseBody(ph){
   let html = `<div class="phase-blurb">${ph.blurb}</div>`;
   html += `<ol class="steps">${ph.steps.map(s=>`<li>${s}</li>`).join("")}</ol>`;
@@ -2090,11 +2356,10 @@ function buildPhaseBody(ph){
       html += `<div class="hero-card">
         <div class="name">${name}</div>
         <div class="step-toggles">
-          <div class="step-toggle ${b.preconStd?'on':''}" title="Derived from a logged win: Klaw, Standard I, Precon">Precon Std Klaw</div>
-          <div class="step-toggle ${b.preconExp?'on':''}" title="Derived from a logged win: Klaw, Expert I, Precon">Precon Exp Klaw</div>
-          <div class="step-toggle ${b.customExp?'on':''}" title="Derived from a logged win: Klaw, Expert I, Custom">Custom Exp Klaw</div>
+          <div class="step-toggle ${b.precon?'on':''}" title="Derived from a logged win: Klaw, Standard or Expert (any tier), Precon">Precon Klaw Win</div>
+          <div class="step-toggle ${b.custom?'on':''}" title="Derived from a logged win: Klaw, Standard or Expert (any tier), Custom">Custom Klaw Win</div>
         </div>
-        <p class="muted" style="margin:6px 0 0;font-size:10.5px;">Steps are derived from Log Play — log a matching Klaw win to complete a step.</p>
+        <p class="muted" style="margin:6px 0 0;font-size:10.5px;">Steps are derived from Log Play — log a matching Klaw win (any Standard or Expert tier) to complete a step.</p>
         <textarea class="hero-notes" data-hero="${id}" placeholder="Benchmark notes (aspect, key cards, setup speed…)" rows="2" style="width:100%;margin-top:8px;background:#00000030;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px;font-size:11.5px;">${notesVal}</textarea>
       </div>`;
     });
@@ -2103,6 +2368,7 @@ function buildPhaseBody(ph){
 
   if(ph.scenarios.length){
     html += `<h4 style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Scenarios Entering</h4>`;
+    html += `<p class="muted" style="margin:0 0 8px;font-size:10.5px;">Marked played automatically the first time you log a matching play — tap a chip to correct it manually.</p>`;
     html += `<div class="chip-row">`;
     ph.scenarios.forEach(([id,name])=>{
       const on = isScenarioUnlocked(id);
@@ -2112,25 +2378,17 @@ function buildPhaseBody(ph){
   }
 
   if(ph.campaign){
-    html += `<div class="campaign-box"><div class="cname">Campaign: ${ph.campaign.name}</div>`;
-    if(ph.campaign.order){
-      html += `<ol class="order-list">${ph.campaign.order.map(sid=>`<li>${SCEN_BY_ID[sid].name}</li>`).join("")}</ol>`;
-    } else if(ph.campaign.sandbox){
-      html += `<p class="muted" style="margin-bottom:6px;">Underling Sandbox — choose your own order (1-5):</p>`;
-      html += `<ul class="order-list sandbox-order">`;
-      ph.campaign.sandbox.forEach(sid=>{
-        const v = STATE.fneOrder[sid]||"";
-        html += `<li><input type="number" min="1" max="5" data-fne-order="${sid}" value="${v}"> ${SCEN_BY_ID[sid].name}</li>`;
-      });
-      html += `</ul>`;
-      html += `<p class="muted" style="margin:8px 0 4px;">Campaign hero:</p>`;
-      html += `<select id="fneHeroSelect" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px;">
-        <option value="">— choose hero —</option>
-        ${HEROES.filter(h=>h.phase<=25).map(h=>`<option value="${h.id}" ${STATE.fneHero===h.id?'selected':''}>${h.name}</option>`).join("")}
-      </select>`;
-      html += `<p class="muted" style="margin:10px 0 4px;">Final showdown: <b style="color:#fff;">${SCEN_BY_ID[ph.campaign.final].name}</b> (mandatory, always last)</p>`;
-    }
+    // Read-only tracking only — actual logging (hero/deck loadout, marking
+    // stages, log entries) happens on the Log Campaign tab, which supports
+    // any number of independent playthroughs of the same campaign box.
+    const prog = campaignProgress(ph);
+    const playthroughs = getCampaignPlaythroughs(ph.id);
+    html += `<div class="campaign-box"><div class="cname">Campaign: ${ph.campaign.name} <span class="cprogress">${prog.wonCount}/${prog.total} scenarios won</span></div>`;
+    const ids = campaignScenarioIds(ph.campaign);
+    html += `<ol class="order-list">${ids.map(sid=>`<li>${SCEN_BY_ID[sid].name} ${scenarioStatusPillHTML(sid)}</li>`).join("")}</ol>`;
+    html += `<p class="muted" style="margin:6px 0;">${playthroughs.length ? playthroughs.length+" playthrough"+(playthroughs.length===1?"":"s")+" logged ("+playthroughs.filter(p=>p.complete).length+" complete)" : "No playthroughs logged yet."}</p>`;
     html += `<div class="campaign-complete-row"><input type="checkbox" id="campComplete-${ph.id}" ${STATE.campaignComplete[ph.id]?'checked':''}><label for="campComplete-${ph.id}">Campaign complete (reached final boss)</label></div>`;
+    html += `<button class="btn2 goto-log-campaign" data-ph="${ph.id}" style="margin-top:8px;">Log this campaign →</button>`;
     html += `</div>`;
   }
 
@@ -2153,20 +2411,205 @@ function wirePhaseBody(item, ph){
       renderPhases(); renderHome();
     });
   });
-  item.querySelectorAll("[data-fne-order]").forEach(el=>{
-    el.addEventListener("change",()=>{
-      STATE.fneOrder[el.dataset.fneOrder] = el.value ? parseInt(el.value,10) : undefined;
-      saveState();
-    });
-  });
-  const fneSel = item.querySelector("#fneHeroSelect");
-  if(fneSel) fneSel.addEventListener("change",()=>{ STATE.fneHero = fneSel.value; saveState(); });
   const campBox = item.querySelector(`#campComplete-${ph.id}`);
   if(campBox) campBox.addEventListener("change",()=>{
     STATE.campaignComplete[ph.id] = campBox.checked;
-    saveState(); renderHome();
+    saveState(); renderHome(); renderPhases();
+  });
+  item.querySelectorAll(".goto-log-campaign").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const phaseId = parseInt(el.dataset.ph,10);
+      showView("logcampaign");
+      setTimeout(()=>selectLogCampaignPhase(phaseId),50);
+    });
   });
 }
+
+/* ============================= LOG CAMPAIGN ============================= */
+// Its own tab (not the Phases tab) specifically because a campaign box can
+// be played more than once — each playthrough gets its own hero/deck/
+// difficulty loadout, stage completion, and free-form log, tracked
+// independently of every other playthrough of the same box.
+let lcSelectedPhaseId = null;
+let lcSelectedPlaythroughId = null;
+function selectLogCampaignPhase(phaseId){
+  lcSelectedPhaseId = phaseId;
+  const list = getCampaignPlaythroughs(phaseId);
+  lcSelectedPlaythroughId = list.length ? list[list.length-1].id : null;
+  renderLogCampaign();
+}
+function renderLogCampaign(){
+  const sel = document.getElementById("lcCampaignSel");
+  const currentPhaseId = computeCurrentPhaseId();
+  const campaigns = PHASES.filter(ph=>ph.campaign && ph.id<=currentPhaseId);
+  if(!campaigns.length){
+    sel.innerHTML = "";
+    document.getElementById("lcPlaythroughPicker").innerHTML = `<p class="empty">No campaigns unlocked yet — reach one on the Phases tab first.</p>`;
+    document.getElementById("lcActiveWrap").innerHTML = "";
+    return;
+  }
+  if(lcSelectedPhaseId==null || !campaigns.some(ph=>ph.id===lcSelectedPhaseId)) lcSelectedPhaseId = campaigns[0].id;
+  sel.innerHTML = campaigns.map(ph=>`<option value="${ph.id}" ${ph.id===lcSelectedPhaseId?'selected':''}>${ph.campaign.name} (Phase ${ph.id})</option>`).join("");
+
+  const ph = PHASES.find(p=>p.id===lcSelectedPhaseId);
+  const playthroughs = getCampaignPlaythroughs(ph.id);
+  if(lcSelectedPlaythroughId==null || !playthroughs.some(p=>p.id===lcSelectedPlaythroughId)){
+    lcSelectedPlaythroughId = playthroughs.length ? playthroughs[playthroughs.length-1].id : null;
+  }
+
+  const pickerEl = document.getElementById("lcPlaythroughPicker");
+  let pickerHTML = `<div class="chip-row">`;
+  playthroughs.forEach(pt=>{
+    const heroName = pt.heroId ? (HERO_BY_ID[pt.heroId]?.name || pt.heroId) : "no hero chosen";
+    pickerHTML += `<div class="scenario-chip ${pt.id===lcSelectedPlaythroughId?'on':''}" data-selectpt="${pt.id}">${escHtml(pt.label)} — ${escHtml(heroName)}${pt.complete?' ✓':''}</div>`;
+  });
+  pickerHTML += `<div class="scenario-chip" id="lcNewPlaythroughBtn" style="border-style:dashed;">+ New Playthrough</div>`;
+  pickerHTML += `</div>`;
+  pickerEl.innerHTML = pickerHTML;
+  pickerEl.querySelectorAll("[data-selectpt]").forEach(el=>{
+    el.addEventListener("click",()=>{ lcSelectedPlaythroughId = el.dataset.selectpt; renderLogCampaign(); });
+  });
+  document.getElementById("lcNewPlaythroughBtn").addEventListener("click",()=>{
+    const pt = createCampaignPlaythrough(ph.id);
+    lcSelectedPlaythroughId = pt.id;
+    saveState();
+    renderLogCampaign();
+  });
+
+  const activeWrap = document.getElementById("lcActiveWrap");
+  if(!lcSelectedPlaythroughId){
+    activeWrap.innerHTML = `<div class="card"><p class="empty">No playthroughs yet — tap "+ New Playthrough" to start logging this campaign.</p></div>`;
+    return;
+  }
+  const pt = getPlaythrough(ph.id, lcSelectedPlaythroughId);
+  activeWrap.innerHTML = buildActivePlaythroughHTML(ph, pt);
+  wireActivePlaythrough(activeWrap, ph, pt);
+}
+function buildActivePlaythroughHTML(ph, pt){
+  let html = `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+      <input type="text" class="lc-label" value="${escHtml(pt.label)}" style="flex:1;background:var(--panel2);border:1px solid var(--border);color:#fff;border-radius:6px;padding:6px 8px;font-size:14px;font-weight:700;">
+      <button class="del lc-delete-pt" title="Delete this playthrough">✕</button>
+    </div>`;
+  html += buildCampaignLoadoutHTML(ph, pt);
+  if(ph.campaign.order){
+    html += `<ol class="order-list">${ph.campaign.order.map(sid=>campaignStageRowHTML(ph,pt,sid)).join("")}</ol>`;
+  } else if(ph.campaign.sandbox){
+    html += `<p class="muted" style="margin-bottom:6px;">Underling Sandbox — choose your own order (1-5):</p>`;
+    html += `<ul class="order-list sandbox-order">`;
+    ph.campaign.sandbox.forEach(sid=>{
+      const v = pt.sandboxOrder[sid]||"";
+      html += campaignStageRowHTML(ph, pt, sid, ` <input type="number" min="1" max="5" class="pt-sandbox-order" data-sid="${sid}" value="${v}" title="Sandbox order">`);
+    });
+    html += `</ul>`;
+    html += `<p class="muted" style="margin:10px 0 4px;">Final showdown: <b style="color:#fff;">${SCEN_BY_ID[ph.campaign.final].name}</b> (mandatory, always last)</p>`;
+    html += `<ul class="order-list">${campaignStageRowHTML(ph, pt, ph.campaign.final)}</ul>`;
+  }
+  html += `<div class="campaign-complete-row"><input type="checkbox" class="lc-pt-complete" ${pt.complete?'checked':''}><label>This playthrough complete (reached final boss)</label></div>`;
+  html += buildCampaignLogHTML(ph, pt);
+  html += `</div>`;
+  return html;
+}
+function wireActivePlaythrough(root, ph, pt){
+  root.querySelector(".lc-label").addEventListener("change", e=>{
+    pt.label = e.target.value.trim() || pt.label;
+    saveState();
+    renderLogCampaign();
+  });
+  root.querySelector(".lc-delete-pt").addEventListener("click", ()=>{
+    showConfirmModal("Delete this playthrough? Any plays it created will also be removed. This can't be undone.", ()=>{
+      deleteCampaignPlaythrough(ph.id, pt.id);
+      lcSelectedPlaythroughId = null;
+      saveState();
+      renderLogCampaign(); renderHome(); renderPhases();
+    }, {confirmLabel:"Delete"});
+  });
+  root.querySelectorAll(".camp-hero").forEach(el=>{
+    el.addEventListener("change",()=>{
+      pt.heroId = el.value;
+      pt.deckId = null; // saved decks are hero-scoped, so any prior pick no longer applies
+      saveState();
+      renderLogCampaign();
+    });
+  });
+  root.querySelectorAll(".camp-difficulty").forEach(el=>{
+    el.addEventListener("change",()=>{ pt.difficulty = el.value; saveState(); });
+  });
+  root.querySelectorAll(".camp-decktype").forEach(el=>{
+    el.addEventListener("change",()=>{
+      pt.deckType = el.value;
+      pt.deckId = null;
+      saveState();
+      renderLogCampaign();
+    });
+  });
+  root.querySelectorAll(".camp-saveddeck").forEach(el=>{
+    el.addEventListener("change",()=>{ pt.deckId = el.value || null; saveState(); });
+  });
+  root.querySelectorAll(".pt-sandbox-order").forEach(el=>{
+    el.addEventListener("change",()=>{
+      pt.sandboxOrder[el.dataset.sid] = el.value ? parseInt(el.value,10) : undefined;
+      saveState();
+    });
+  });
+  root.querySelectorAll(".stage-mark").forEach(el=>{
+    el.addEventListener("click",()=>{
+      if(!pt.heroId){ showAlertModal("Choose a hero above first."); return; }
+      const sid = el.dataset.sid;
+      const play = {
+        id: "p"+Date.now()+Math.random().toString(36).slice(2,7),
+        date: new Date().toISOString().slice(0,10),
+        heroId: pt.heroId, scenarioId: sid, difficulty: pt.difficulty,
+        heroicLevel: pt.difficulty==="Heroic" ? 1 : null,
+        deckType: pt.deckType, deckId: pt.deckType==="custom" ? (pt.deckId||null) : null,
+        isLegacyCustom:false, result:"W", notes:"Marked complete from Campaign Log ("+pt.label+")", ts: Date.now()
+      };
+      STATE.plays.push(play);
+      STATE.scenarioUnlocked[sid] = true;
+      pt.stagePlays[sid] = play.id;
+      saveState();
+      renderLogCampaign(); renderHome(); renderPhases();
+    });
+  });
+  root.querySelectorAll(".stage-unmark").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const sid = el.dataset.sid;
+      const playId = pt.stagePlays[sid];
+      STATE.plays = STATE.plays.filter(p=>p.id!==playId);
+      delete pt.stagePlays[sid];
+      saveState();
+      renderLogCampaign(); renderHome(); renderPhases();
+    });
+  });
+  const ptCompleteBox = root.querySelector(".lc-pt-complete");
+  if(ptCompleteBox) ptCompleteBox.addEventListener("change",()=>{
+    pt.complete = ptCompleteBox.checked;
+    saveState();
+    renderLogCampaign(); renderHome();
+  });
+  const clAddBtn = root.querySelector(".cl-add");
+  if(clAddBtn) clAddBtn.addEventListener("click",()=>{
+    const dateEl = root.querySelector(".cl-date");
+    const textEl = root.querySelector(".cl-text");
+    const text = textEl.value.trim();
+    if(!text) return;
+    pt.entries.push({ id:"cl"+Date.now()+Math.random().toString(36).slice(2,6), date: dateEl.value || new Date().toISOString().slice(0,10), text, ts: Date.now() });
+    saveState();
+    renderLogCampaign();
+  });
+  root.querySelectorAll(".cl-del").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      pt.entries = pt.entries.filter(e=>e.id!==btn.dataset.entry);
+      saveState();
+      renderLogCampaign();
+    });
+  });
+}
+document.getElementById("lcCampaignSel").addEventListener("change", e=>{
+  lcSelectedPhaseId = parseInt(e.target.value,10);
+  lcSelectedPlaythroughId = null;
+  renderLogCampaign();
+});
 
 /* ============================= MATRIX ============================= */
 // Default view is scoped to the phases you've reached — computeCurrentPhaseId()
@@ -2467,6 +2910,7 @@ function openHeroPicker(onPick){
 // flow too, without a detour through the Presets tab first).
 function openDeckStartPicker(heroId, onDone){
   const presets = STATE.aspectPresets.filter(p=>!p.archived);
+  const copyableDecks = STATE.decks.filter(d=>!d.archived);
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
   backdrop.innerHTML = `<div class="modal-sheet">
@@ -2479,6 +2923,13 @@ function openDeckStartPicker(heroId, onDone){
       </select>
       <button class="big-btn" id="startPresetBtn">Use This Preset</button>
     ` : `<p class="deck-note" style="margin-top:14px;">No Aspect Presets saved yet — create one from the Aspect Presets tab to reuse it here next time.</p>`}
+    ${copyableDecks.length ? `
+      <p class="deck-note" style="margin:14px 0 6px;">Or copy an existing saved deck's card choices:</p>
+      <select id="startCopySel" style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-size:14px;margin-bottom:12px;">
+        ${copyableDecks.map(d=>`<option value="${d.id}">${d.name} (${HERO_BY_ID[d.heroId]?.name||d.heroId} · ${d.aspect})</option>`).join("")}
+      </select>
+      <button class="big-btn" id="startCopyBtn">Copy This Deck</button>
+    ` : ``}
     <button class="btn2" id="startCancelBtn" style="margin-top:10px;width:100%;">Cancel</button>
   </div>`;
   document.body.appendChild(backdrop);
@@ -2496,6 +2947,14 @@ function openDeckStartPicker(heroId, onDone){
       onDone({mode:"preset", presetId});
     });
   }
+  const copyBtn = backdrop.querySelector("#startCopyBtn");
+  if(copyBtn){
+    copyBtn.addEventListener("click",()=>{
+      const deckId = backdrop.querySelector("#startCopySel").value;
+      backdrop.remove();
+      onDone({mode:"copy", deckId});
+    });
+  }
 }
 document.getElementById("newDeckBtn").addEventListener("click",()=>{
   if(!DECKBUILDABLE_HEROES.size){ showAlertModal("No heroes have catalogued card data yet."); return; }
@@ -2505,6 +2964,8 @@ document.getElementById("newDeckBtn").addEventListener("click",()=>{
       let deck;
       if(choice.mode==="preset" && getPreset(choice.presetId)){
         deck = attachPresetToHero(getPreset(choice.presetId), heroId);
+      } else if(choice.mode==="copy" && getDeck(choice.deckId)){
+        deck = copyDeckToHero(getDeck(choice.deckId), heroId);
       } else {
         const aspect = (DECKS[heroId] && DECKS[heroId].aspect) || HOME_ASPECTS[0];
         deck = createDeck(heroId, aspect);
@@ -2541,6 +3002,7 @@ function renderMyDecks(){
       </div>
       <div class="dactions">
         <button class="btn2" data-viewdeck="${d.id}">${locked?'View':'Edit'}</button>
+        <button class="btn2" data-copydeck="${d.id}" title="Make an independent copy of this deck">Copy</button>
         ${locked && !d.archived ? `<button class="btn2" data-duplicatedeck="${d.id}">Duplicate &amp; Edit</button>`:''}
         ${!d.archived ? `<button class="btn2" data-archivedeck="${d.id}">Archive</button>`:`<button class="btn2" data-unarchivedeck="${d.id}">Unarchive</button>`}
         <button class="btn2" style="color:#e8828a;" data-deletedeck="${d.id}">Delete</button>
@@ -2548,6 +3010,11 @@ function renderMyDecks(){
     </div>`;
   }).join("");
   holder.querySelectorAll("[data-viewdeck]").forEach(b=>b.addEventListener("click",()=>openDeckEditor(b.dataset.viewdeck)));
+  holder.querySelectorAll("[data-copydeck]").forEach(b=>b.addEventListener("click",()=>{
+    const nd = copyDeckSameHero(getDeck(b.dataset.copydeck));
+    renderMyDecks();
+    openDeckEditor(nd.id);
+  }));
   holder.querySelectorAll("[data-duplicatedeck]").forEach(b=>b.addEventListener("click",()=>{
     const nd = duplicateDeckAsNewVersion(getDeck(b.dataset.duplicatedeck));
     renderMyDecks();
@@ -3037,6 +3504,45 @@ logDeckSel.addEventListener("change", syncDeckTypeUI);
 document.getElementById("logHero").addEventListener("change", ()=>{ if(logDeckSel.value==="Custom") refreshSavedDeckOptions(); });
 syncDeckTypeUI();
 
+// Editing an existing play reuses this same form instead of a separate
+// modal — startEditPlay() populates every field from the chosen play and
+// flips saveLogBtn into "update in place" mode via editingPlayId. This is
+// the main way to fix a play that was logged against the wrong deck (or
+// with no deck at all) once a real saved deck exists for it.
+let editingPlayId = null;
+function startEditPlay(id){
+  const play = STATE.plays.find(p=>p.id===id);
+  if(!play) return;
+  document.getElementById("logDate").value = play.date || "";
+  document.getElementById("logDifficulty").value = play.difficulty;
+  heroicLevelWrap.style.display = (play.difficulty==="Heroic") ? "" : "none";
+  if(play.difficulty==="Heroic") document.getElementById("logHeroicLevel").value = play.heroicLevel || 1;
+  document.getElementById("logHero").value = play.heroId;
+  logDeckSel.value = play.deckType==="precon" ? "Precon" : "Custom";
+  syncDeckTypeUI();
+  if(play.deckType==="custom") logSavedDeckSel.value = play.deckId || "";
+  document.getElementById("logScenario").value = play.scenarioId;
+  document.getElementById("logResult").value = play.result;
+  document.getElementById("logNotes").value = play.notes || "";
+
+  editingPlayId = id;
+  document.getElementById("logFormHeading").textContent = "Edit Logged Play";
+  document.getElementById("logFormHint").textContent = "Editing an existing entry — Save Entry updates it in place. Changing its deck re-evaluates which deck is locked.";
+  document.getElementById("saveLogBtn").textContent = "Update Entry";
+  document.getElementById("cancelEditLogBtn").style.display = "";
+  const logView = document.getElementById("view-log");
+  if(logView.scrollIntoView) logView.scrollIntoView({behavior:"smooth", block:"start"});
+}
+function cancelEditPlay(){
+  editingPlayId = null;
+  document.getElementById("logFormHeading").textContent = "Log a Play";
+  document.getElementById("logFormHint").textContent = "Every saved entry counts as one attempt and automatically updates the matrix and Klaw benchmark steps — there's no separate apply step.";
+  document.getElementById("saveLogBtn").textContent = "Save Entry";
+  document.getElementById("cancelEditLogBtn").style.display = "none";
+  document.getElementById("logNotes").value = "";
+}
+document.getElementById("cancelEditLogBtn").addEventListener("click", cancelEditPlay);
+
 document.getElementById("saveLogBtn").addEventListener("click",()=>{
   const heroId = document.getElementById("logHero").value;
   const scenId = document.getElementById("logScenario").value;
@@ -3047,6 +3553,24 @@ document.getElementById("saveLogBtn").addEventListener("click",()=>{
   const result = document.getElementById("logResult").value;
   const notes = document.getElementById("logNotes").value.trim();
   const date = document.getElementById("logDate").value || new Date().toISOString().slice(0,10);
+
+  if(editingPlayId){
+    // Update the existing record in place — id and original ts (so its
+    // position/history is preserved) stay the same; everything else,
+    // including which deck it's linked to, is replaced with the form's
+    // current values. Deck locking is derived from STATE.plays, so
+    // changing deckId here automatically re-locks/unlocks the right decks.
+    const play = STATE.plays.find(p=>p.id===editingPlayId);
+    if(play){
+      Object.assign(play, { date, heroId, scenarioId:scenId, difficulty, heroicLevel, deckType, deckId, result, notes });
+      STATE.scenarioUnlocked[scenId] = true;
+      saveState();
+    }
+    cancelEditPlay();
+    refreshSavedDeckOptions();
+    renderLog(); renderHome(); renderPhases();
+    return;
+  }
 
   // Every saved play is exactly one attempt and automatically feeds the
   // derived matrix and Klaw benchmark steps — no separate apply step, no
@@ -3086,7 +3610,8 @@ function renderLog(){
         <div class="title">${hero} vs ${scen}</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="badge ${e.result}">${e.result}</span>
-          <button class="del" data-del="${e.id}">✕</button>
+          <button class="del" data-edit="${e.id}" title="Edit this entry">✎</button>
+          <button class="del" data-del="${e.id}" title="Delete this entry">✕</button>
         </div>
       </div>
       <div class="meta">${e.date} · ${formatDifficulty(e)} · ${deckLabel}</div>
@@ -3095,9 +3620,15 @@ function renderLog(){
   }).join("");
   holder.querySelectorAll("[data-del]").forEach(btn=>{
     btn.addEventListener("click",()=>{
-      STATE.plays = STATE.plays.filter(e=>e.id!==btn.dataset.del);
-      saveState(); renderLog(); renderMatrix(); renderHome(); renderPhases();
+      showConfirmModal("Delete this log entry? This can't be undone.", ()=>{
+        if(editingPlayId===btn.dataset.del) cancelEditPlay();
+        STATE.plays = STATE.plays.filter(e=>e.id!==btn.dataset.del);
+        saveState(); renderLog(); renderMatrix(); renderHome(); renderPhases();
+      }, {confirmLabel:"Delete"});
     });
+  });
+  holder.querySelectorAll("[data-edit]").forEach(btn=>{
+    btn.addEventListener("click",()=>startEditPlay(btn.dataset.edit));
   });
 }
 document.getElementById("logSearch").addEventListener("input", renderLog);
